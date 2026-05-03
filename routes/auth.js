@@ -1,24 +1,30 @@
 const express = require('express')
 const router = express.Router()
 const User = require('../models/user')
+const bcrypt = require('bcrypt')
 
 router.get('/register', (req, res) => {
-  res.render('register')
+  res.render('register', { error: null })
 })
 
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body
-    const user = new User({ name, email, password, role })
+    const hashedPassword = await bcrypt.hash(password, 10)
+    const user = new User({ name, email, password: hashedPassword, role })
     await user.save()
     res.redirect('/login')
   } catch (err) {
-    res.render('register', { error: 'Email already exists' })
+    if (err.code === 11000) {
+      res.render('register', { error: 'Email already exists' })
+    } else {
+      res.render('register', { error: 'Registration failed: ' + err.message })
+    }
   }
 })
 
 router.get('/login', (req, res) => {
-  res.render('login')
+  res.render('login', { error: null })
 })
 
 router.post('/login', async (req, res) => {
@@ -26,11 +32,11 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body
     const user = await User.findOne({ email })
     if (!user || !user.isActive) {
-      return res.render('login', { error: 'Invalid credentials' })
+      return res.render('login', { error: 'Invalid email or password' })
     }
     const isMatch = await user.comparePassword(password)
     if (!isMatch) {
-      return res.render('login', { error: 'Invalid credentials' })
+      return res.render('login', { error: 'Invalid email or password' })
     }
     req.session.user = {
       id: user._id,
@@ -40,7 +46,7 @@ router.post('/login', async (req, res) => {
     }
     res.redirect('/')
   } catch (err) {
-    res.render('login', { error: 'Login failed' })
+    res.render('login', { error: 'Login failed: ' + err.message })
   }
 })
 

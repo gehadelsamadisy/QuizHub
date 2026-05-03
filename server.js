@@ -1,7 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const session = require('express-session')
-const MongoStore = require('connect-mongo')
 const path = require('path')
 
 const app = express()
@@ -18,7 +17,6 @@ app.use(session({
   secret: 'quizhub-secret-key',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: 'mongodb://localhost:27017/quizhub' }),
   cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }))
 
@@ -32,15 +30,9 @@ app.use((req, res, next) => {
 
 const authRoutes = require('./routes/auth')
 const quizRoutes = require('./routes/quiz')
-const userRoutes = require('./routes/user')
-const attemptRoutes = require('./routes/attempt')
-const adminRoutes = require('./routes/admin')
 
 app.use('/', authRoutes)
 app.use('/quiz', quizRoutes)
-app.use('/user', userRoutes)
-app.use('/attempt', attemptRoutes)
-app.use('/admin', adminRoutes)
 
 app.get('/', (req, res) => {
   res.render('home')
