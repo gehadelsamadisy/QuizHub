@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Quizzes - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/create">Create Quiz</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>My Quizzes</h1>
+    <a href="/quiz/create" class="btn">Create New Quiz</a>
+
+    <div class="quiz-list">
+      <% if (quizzes.length === 0) { %>
+        <p>No quizzes created yet.</p>
+      <% } else { %>
+        <% quizzes.forEach(quiz => { %>
+          <div class="quiz-card">
+            <h3><%= quiz.title %></h3>
+            <p><%= quiz.description %></p>
+            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>%</p>
+            <p>Status: <span class="status <%= quiz.status %>"><%= quiz.status %></span></p>
+            <div class="quiz-actions">
+              <% if (quiz.status === 'draft') { %>
+                <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
+                <form method="POST" action="/quiz/<%= quiz._id %>/publish" style="display:inline;">
+                  <button type="submit">Publish</button>
+                </form>
+              <% } %>
+              <a href="/quiz/<%= quiz._id %>/view" class="btn btn-secondary">View</a>
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>
+
+<style>
+.quiz-card {
+  background: white;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.status.draft { background: #f39c12; color: white; }
+.status.published { background: #27ae60; color: white; }
+.status.closed { background: #e74c3c; color: white; }
+
+.quiz-actions a, .quiz-actions button {
+  margin-right: 0.5rem;
+}
+</style>

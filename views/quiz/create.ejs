@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Quiz - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Create New Quiz</h1>
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+    <form method="POST" action="/quiz/create">
+      <div>
+        <label>Title:</label>
+        <input type="text" name="title" required>
+      </div>
+      <div>
+        <label>Description:</label>
+        <textarea name="description"></textarea>
+      </div>
+      <div>
+        <label>Subject:</label>
+        <input type="text" name="subject" required>
+      </div>
+      <div>
+        <label>Time Limit (minutes):</label>
+        <input type="number" name="timeLimit" min="1" required>
+      </div>
+      <div>
+        <label>Passing Score (%):</label>
+        <input type="number" name="passingScore" min="0" max="100" required>
+      </div>
+      <button type="submit">Create Quiz</button>
+    </form>
+  </div>
+</body>
+</html>

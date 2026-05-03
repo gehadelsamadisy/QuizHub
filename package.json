@@ -1,0 +1,30 @@
+{
+  "name": "final-project",
+  "version": "1.0.0",
+  "description": "## Cover Page",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gehadelsamadisy/QuizHub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gehadelsamadisy/QuizHub/issues"
+  },
+  "homepage": "https://github.com/gehadelsamadisy/QuizHub#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "chart.js": "^4.5.1",
+    "connect-mongo": "^6.0.0",
+    "ejs": "^5.0.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mongoose": "^9.6.1",
+    "multer": "^2.1.1"
+  }
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Browse Quizzes - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/attempt/history">My Results</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Available Quizzes</h1>
+
+    <form method="GET" action="/quiz/browse" class="filter-form">
+      <label>Filter by Subject:</label>
+      <input type="text" name="subject" value="<%= subject || '' %>">
+      <button type="submit">Filter</button>
+      <% if (subject) { %>
+        <a href="/quiz/browse">Clear Filter</a>
+      <% } %>
+    </form>
+
+    <div class="quiz-list">
+      <% if (quizzes.length === 0) { %>
+        <p>No quizzes available.</p>
+      <% } else { %>
+        <% quizzes.forEach(quiz => { %>
+          <div class="quiz-card">
+            <h3><%= quiz.title %></h3>
+            <p><%= quiz.description %></p>
+            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>%</p>
+            <a href="/quiz/<%= quiz._id %>/take" class="btn">Start Quiz</a>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <style>
+    .quiz-card {
+      background: white;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .filter-form {
+      background: white;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+    }
+    .filter-form input {
+      width: auto;
+      margin-right: 1rem;
+    }
+  </style>
+</body>
+</html>
