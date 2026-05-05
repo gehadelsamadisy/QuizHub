@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Take Quiz - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/browse">Browse Quizzes</a>
+      <a href="/attempt/history">My Results</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard">
+      <h1><%= quiz.title %></h1>
+      <p><%= quiz.description %></p>
+      <p>Subject: <%= quiz.subject %> | Time Limit: <%= timeLimit %> minutes | Passing Score: <%= quiz.passingScore %>%</p>
+      <div id="timer" class="timer"></div>
+    </div>
+
+    <form method="POST" action="/quiz/<%= quiz._id %>/submit" enctype="multipart/form-data">
+      <input type="hidden" name="attemptId" value="<%= attempt._id %>">
+      <% questions.forEach((question, index) => { %>
+        <% const savedAnswer = answerMap.get(question._id.toString()) %>
+        <div class="dashboard question-card">
+          <h3>Question <%= index + 1 %></h3>
+          <% if (question.image) { %>
+            <p><strong>Attachment:</strong> <%= question.image %></p>
+          <% } %>
+          <p><%= question.text %></p>
+
+          <% if (question.type === 'mcq') { %>
+            <% question.options.forEach((option, optionIndex) => { %>
+              <label class="option-row">
+                <input
+                  type="radio"
+                  name="answer_<%= question._id %>"
+                  value="<%= optionIndex %>"
+                  <%= savedAnswer && savedAnswer.selectedOption === optionIndex ? 'checked' : '' %>
+                >
+                <span><%= option.text %></span>
+              </label>
+            <% }) %>
+          <% } else if (question.type === 'written') { %>
+            <textarea name="answer_<%= question._id %>" rows="5"><%= savedAnswer && savedAnswer.textAnswer ? savedAnswer.textAnswer : '' %></textarea>
+          <% } else if (question.type === 'file_upload') { %>
+            <input type="file" name="question_<%= question._id %>" accept="image/*,.pdf">
+            <% if (savedAnswer && savedAnswer.uploadedFile) { %>
+              <p class="muted">Previously uploaded: <%= savedAnswer.uploadedFile %></p>
+            <% } %>
+          <% } %>
+
+          <p class="muted">Points: <%= question.points %></p>
+        </div>
+      <% }) %>
+
+      <div class="dashboard">
+        <button type="submit">Submit Quiz</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const timerElement = document.getElementById('timer')
+    const deadline = Date.now() + (<%= timeLimit %> * 60 * 1000)
+
+    function updateTimer() {
+      const remaining = Math.max(0, deadline - Date.now())
+      const totalSeconds = Math.floor(remaining / 1000)
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
+      const seconds = String(totalSeconds % 60).padStart(2, '0')
+      timerElement.textContent = `Time Remaining: ${minutes}:${seconds}`
+
+      if (remaining <= 0) {
+        document.querySelector('form').submit()
+      }
+    }
+
+    updateTimer()
+    setInterval(updateTimer, 1000)
+  </script>
+
+  <style>
+    .timer {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #c0392b;
+      margin-top: 0.75rem;
+    }
+
+    .question-card {
+      margin-top: 1rem;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+  </style>
+</body>
+</html>

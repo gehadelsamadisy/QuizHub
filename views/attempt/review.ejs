@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Attempt Review - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/attempt/history">My Results</a>
+      <a href="/quiz/browse">Browse Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard">
+      <h1><%= attempt.quizId.title %></h1>
+      <p>Status: <%= attempt.gradingStatus %></p>
+      <p>Score: <%= attempt.totalScore %> / <%= attempt.maxScore %></p>
+      <p>Result: <%= attempt.passed ? 'Passed' : 'Not passed' %></p>
+    </div>
+
+    <% questions.forEach((question, index) => { %>
+      <% const answer = answerMap.get(question._id.toString()) %>
+      <div class="dashboard question-card">
+        <h3>Question <%= index + 1 %></h3>
+        <p><%= question.text %></p>
+        <p><strong>Type:</strong> <%= question.type %></p>
+        <% if (question.type === 'mcq') { %>
+          <p><strong>Your answer:</strong> <%= answer && answer.selectedOption !== undefined ? (question.options[answer.selectedOption] ? question.options[answer.selectedOption].text : 'Not answered') : 'Not answered' %></p>
+          <p><strong>Score:</strong> <%= answer ? answer.score : 0 %></p>
+        <% } else if (question.type === 'written') { %>
+          <p><strong>Your answer:</strong></p>
+          <div class="answer-box"><%= answer && answer.textAnswer ? answer.textAnswer : 'No answer submitted' %></div>
+          <p><strong>Score:</strong> <%= answer ? answer.score : 0 %></p>
+        <% } else if (question.type === 'file_upload') { %>
+          <p><strong>Uploaded file:</strong> <%= answer && answer.uploadedFile ? answer.uploadedFile : 'No file submitted' %></p>
+          <p><strong>Score:</strong> <%= answer ? answer.score : 0 %></p>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+
+  <style>
+    .question-card {
+      margin-top: 1rem;
+    }
+
+    .answer-box {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 0.75rem;
+      white-space: pre-wrap;
+      margin: 0.5rem 0 1rem;
+    }
+  </style>
+</body>
+</html>
