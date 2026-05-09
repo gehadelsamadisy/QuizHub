@@ -124,11 +124,20 @@
     }
 
     function toggleOptions(select, index) {
-      const optionsContainer = document.getElementById(`options-${index}`)
+      const optionsContainer = document.getElementById(`options-${index}`);
+      // Select the radio buttons inside this specific question block
+      const radioButtons = optionsContainer.querySelectorAll('input[type="radio"]');
+      
       if (select.value === 'mcq') {
-        optionsContainer.style.display = 'block'
+        optionsContainer.style.display = 'block';
+        // Make the first radio button required again
+        if (radioButtons.length > 0) {
+          radioButtons[0].required = true;
+        }
       } else {
-        optionsContainer.style.display = 'none'
+        optionsContainer.style.display = 'none';
+        // Remove the required attribute so the form can submit
+        radioButtons.forEach(radio => radio.required = false);
       }
     }
   </script>

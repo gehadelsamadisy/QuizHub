@@ -151,22 +151,22 @@ router.post(
           text: q.text,
           type: q.type,
           points: parseInt(q.points) || 1,
-          options: q.options
-            ? q.options.map((opt, idx) => ({
-                text: opt.text,
-                isCorrect: idx === parseInt(q.correctOption),
-              }))
+          options: q.type === 'mcq' && q.options
+            ? q.options
+                .filter(opt => opt.text && opt.text.trim() !== '')
+                .map((opt, idx) => ({
+                  text: opt.text,
+                  isCorrect: idx === parseInt(q.correctOption),
+                }))
             : [],
         });
         await question.save();
       }
-
+      
       res.redirect("/quiz/my-quizzes");
     } catch (err) {
-      res.render("quiz/add-questions", {
-        quiz,
-        error: "Failed to add questions",
-      });
+      console.error('Add questions error:', err.message);
+      return res.redirect('/quiz/my-quizzes');
     }
   },
 );
