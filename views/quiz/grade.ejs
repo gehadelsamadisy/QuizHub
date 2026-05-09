@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grade Submission - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/pending-grading">Pending Grading</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard">
+      <h1>Grading: <%= attempt.quizId.title %></h1>
+      <p>Student: <%= attempt.studentId.name %> (<%= attempt.studentId.email %>)</p>
+      <p>Submitted: <%= attempt.submittedAt ? attempt.submittedAt.toLocaleString() : 'Unknown' %></p>
+    </div>
+
+    <form method="POST" action="/quiz/<%= attempt.quizId._id %>/grade/<%= attempt._id %>">
+      <% answers.forEach((answer, index) => { %>
+        <% const question = answer.questionId %>
+        <div class="dashboard" style="margin-top: 1rem;">
+          <h3>Question <%= index + 1 %> — <%= question.type %> (<%= question.points %> pts max)</h3>
+          <p><strong>Question:</strong> <%= question.text %></p>
+
+          <% if (question.type === 'written') { %>
+            <p><strong>Student's answer:</strong></p>
+            <div style="background:#f8f9fa; border:1px solid #ddd; border-radius:4px; padding:0.75rem; white-space:pre-wrap; margin-bottom:1rem;">
+              <%= answer.textAnswer || 'No answer submitted' %>
+            </div>
+          <% } else if (question.type === 'file_upload') { %>
+            <p><strong>Uploaded file:</strong>
+              <% if (answer.uploadedFile) { %>
+                <a href="/uploads/attempts/<%= answer.uploadedFile %>" target="_blank">View file</a>
+              <% } else { %>
+                No file submitted
+              <% } %>
+            </p>
+          <% } else if (question.type === 'mcq') { %>
+            <p><strong>MCQ — already auto-graded.</strong> Score: <%= answer.score %></p>
+          <% } %>
+
+          <% if (question.type !== 'mcq') { %>
+            <label><strong>Score to award (0 – <%= question.points %>):</strong></label>
+            <input
+              type="number"
+              name="score_<%= answer._id %>"
+              min="0"
+              max="<%= question.points %>"
+              value="<%= answer.score %>"
+              style="width: 80px; margin-left: 0.5rem;"
+              required
+            >
+          <% } else { %>
+            <input type="hidden" name="score_<%= answer._id %>" value="<%= answer.score %>">
+          <% } %>
+        </div>
+      <% }) %>
+
+      <div class="dashboard" style="margin-top: 1rem;">
+        <button type="submit" class="btn">Save All Scores & Mark as Graded</button>
+        <a href="/quiz/pending-grading" style="margin-left: 1rem;">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

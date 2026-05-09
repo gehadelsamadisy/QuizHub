@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pending Grading - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Pending Grading</h1>
+
+    <% if (attempts.length === 0) { %>
+      <div class="dashboard">
+        <p>No submissions waiting to be graded.</p>
+      </div>
+    <% } else { %>
+      <% attempts.forEach(attempt => { %>
+        <div class="dashboard">
+          <h3><%= attempt.quizId ? attempt.quizId.title : 'Unknown Quiz' %></h3>
+          <p>Student: <%= attempt.studentId ? attempt.studentId.name : 'Unknown' %></p>
+          <p>Submitted: <%= attempt.submittedAt ? attempt.submittedAt.toLocaleString() : 'Unknown' %></p>
+          <p>MCQ score so far: <%= attempt.totalScore %> / <%= attempt.maxScore %></p>
+          <a href="/quiz/<%= attempt.quizId._id %>/grade/<%= attempt._id %>" class="btn">Grade This Submission</a>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</body>
+</html>

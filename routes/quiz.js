@@ -348,4 +348,59 @@ router.get('/:id/view', requireAuth, requireRole(['teacher']), async (req, res) 
   }
 });
 
+// ==================Manual Grading Routes==================
+
+router.get('/pending-grading', requireAuth, requireRole(['teacher']), async (req, res) => {
+  try {
+    const quizzes = await Quiz.find({ createdBy: req.session.user.id });
+    const quizIds = quizzes.map(q => q._id);
+    const attempts = await Attempt.find({
+      quizId: { $in: quizIds },
+      gradingStatus: 'pending-review'
+    }).populate('quizId').populate('studentId');
+    res.render('quiz/pending-grading', { attempts });
+  } catch (err) {
+    res.render('quiz/pending-grading', { attempts: [], error: 'Failed to load' });
+  }
+});
+
+
+router.get('/:quizId/grade/:attemptId', requireAuth, requireRole(['teacher']), async (req, res) => {
+  try {
+    const attempt = await Attempt.findById(req.params.attemptId)
+      .populate('studentId')
+      .populate('quizId');
+    if (!attempt) return res.redirect('/quiz/pending-grading');
+    const answers = await Answer.find({ attemptId: attempt._id }).populate('questionId');
+    res.render('quiz/grade', { attempt, answers });
+  } catch (err) {
+    res.redirect('/quiz/pending-grading');
+  }
+});
+
+
+router.post('/:quizId/grade/:attemptId', requireAuth, requireRole(['teacher']), async (req, res) => {
+  try {
+    const attempt = await Attempt.findById(req.params.attemptId).populate('quizId');
+    if (!attempt) return res.redirect('/quiz/pending-grading');
+    const answers = await Answer.find({ attemptId: attempt._id });
+    let totalScore = 0;
+    for (const answer of answers) {
+      const submitted = parseInt(req.body[`score_${answer._id}`]);
+      answer.score = isNaN(submitted) ? answer.score : submitted;
+      await answer.save();
+      totalScore += answer.score;
+    }
+    attempt.totalScore = totalScore;
+    attempt.gradingStatus = 'fully-graded';
+    attempt.passed = totalScore >= (attempt.quizId.passingScore / 100) * attempt.maxScore;
+    await attempt.save();
+    res.redirect('/quiz/pending-grading');
+  } catch (err) {
+    res.redirect('/quiz/pending-grading');
+  }
+});
+
+// ==================End Manual Grading Routes==================
+
 module.exports = router;
