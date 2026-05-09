@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Error - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Access denied</h1>
+    <p><%= typeof message !== 'undefined' ? message : 'You do not have permission to view this page.' %></p>
+    <p><a href="/" class="btn">Go home</a></p>
+  </div>
+</body>
+</html>

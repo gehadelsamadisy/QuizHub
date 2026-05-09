@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const User = require('../models/user')
 const bcrypt = require('bcrypt')
+const { COOKIE_NAME, signUserToken, cookieOptions, clearCookieOptions } = require('../lib/jwt')
 
 router.get('/register', (req, res) => {
   res.render('register', { error: null })
@@ -38,12 +39,8 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.render('login', { error: 'Invalid email or password' })
     }
-    req.session.user = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    }
+    const token = signUserToken(user)
+    res.cookie(COOKIE_NAME, token, cookieOptions())
     res.redirect('/')
   } catch (err) {
     res.render('login', { error: 'Login failed: ' + err.message })
@@ -51,7 +48,7 @@ router.post('/login', async (req, res) => {
 })
 
 router.get('/logout', (req, res) => {
-  req.session.destroy()
+  res.clearCookie(COOKIE_NAME, clearCookieOptions())
   res.redirect('/login')
 })
 

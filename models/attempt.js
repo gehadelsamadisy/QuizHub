@@ -12,7 +12,8 @@ const attemptSchema = new mongoose.Schema({
     default: 'in-progress'
   },
   startedAt: { type: Date, default: Date.now },
-  submittedAt: { type: Date }
+  submittedAt: { type: Date },
+  gradesReleased: { type: Boolean, default: false }
 })
 
 module.exports = mongoose.model('Attempt', attemptSchema)

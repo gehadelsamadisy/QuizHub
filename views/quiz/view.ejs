@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= quiz.title %> - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1><%= quiz.title %></h1>
+    <p><%= quiz.description || '' %></p>
+    <p class="meta">Subject: <%= quiz.subject %> · Time: <%= quiz.timeLimit %> min · Passing: <%= quiz.passingScore %>% · Attempts per student: <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %> · Status: <%= quiz.status %></p>
+
+    <h2>Questions (<%= questions.length %>)</h2>
+    <% if (questions.length === 0) { %>
+      <p>No questions yet. <a href="/quiz/<%= quiz._id %>/add-questions">Add questions</a></p>
+    <% } else { %>
+      <% questions.forEach((q, i) => { %>
+        <div class="question-preview">
+          <p>
+            <strong>Q<%= i + 1 %>.</strong> <%= q.text %>
+            <span class="badge"><%= q.type %> · <%= q.points %> pt</span>
+            <% if (quiz.status === 'draft' || quiz.status === 'published') { %>
+              <a href="/quiz/<%= quiz._id %>/questions/<%= q._id %>/edit" class="btn-edit-q">Edit</a>
+            <% } %>
+          </p>
+          <% if (q.type === 'mcq' && q.options && q.options.length) { %>
+            <ul>
+              <% q.options.forEach((opt, oi) => { %>
+                <li><%= opt.isCorrect ? '✓ ' : '' %><%= opt.text %></li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } %>
+
+    <div class="teacher-actions" style="margin-top: 2rem;">
+      <a href="/quiz/my-quizzes" class="btn btn-secondary">Back to My Quizzes</a>
+      <a href="/quiz/settings/<%= quiz._id %>" class="btn">Edit quiz settings</a>
+      <a href="/quiz/<%= quiz._id %>/submissions" class="btn">Student submissions</a>
+      <% if (quiz.status === 'draft' || quiz.status === 'published') { %>
+        <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add or edit questions</a>
+      <% } %>
+      <% if (quiz.status === 'published') { %>
+        <form method="POST" action="/quiz/<%= quiz._id %>/close" style="display:inline;" onsubmit="return confirm('Close this quiz? Students will no longer see it or be able to start it. Existing attempts stay saved.');">
+          <button type="submit" class="btn-warning">Close quiz for students</button>
+        </form>
+        <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Permanently DELETE this quiz and ALL student attempts and results? This cannot be undone.');">
+          <button type="submit" class="btn-delete-all">Delete quiz completely</button>
+        </form>
+      <% } %>
+      <% if (quiz.status === 'closed') { %>
+        <form method="POST" action="/quiz/<%= quiz._id %>/reopen" style="display:inline;" onsubmit="return confirm('Make this quiz available to students again?');">
+          <button type="submit" class="btn-reopen">Make available again</button>
+        </form>
+        <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Permanently delete this quiz and all related student data?');">
+          <button type="submit" class="btn-delete-all">Delete quiz permanently</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+  <style>
+    .teacher-actions form { margin-right: 0.5rem; margin-top: 0.5rem; display: inline-block; vertical-align: middle; }
+    .btn-warning {
+      background: #e67e22;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-warning:hover { background: #ca6f1d; }
+    .btn-delete-all {
+      background: #c0392b;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-delete-all:hover { background: #a93226; }
+    .btn-reopen {
+      background: #1e8449;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-reopen:hover { background: #196f3d; }
+    .meta { color: #555; margin: 1rem 0; }
+    .question-preview {
+      background: #fff;
+      padding: 1rem;
+      margin: 0.75rem 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .badge { font-size: 0.85rem; color: #666; margin-left: 0.35rem; }
+    .btn-edit-q {
+      font-size: 0.85rem;
+      margin-left: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      background: #3498db;
+      color: #fff;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+    .btn-edit-q:hover { background: #2980b9; }
+    .question-preview ul { margin: 0.5rem 0 0 1.25rem; }
+  </style>
+</body>
+</html>

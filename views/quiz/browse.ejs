@@ -17,6 +17,10 @@
   <div class="container">
     <h1>Available Quizzes</h1>
 
+    <% if (typeof msg !== 'undefined' && msg) { %>
+      <div class="notice"><%= msg %></div>
+    <% } %>
+
     <form method="GET" action="/quiz/browse" class="filter-form">
       <label>Filter by Subject:</label>
       <input type="text" name="subject" value="<%= subject || '' %>">
@@ -34,8 +38,8 @@
           <div class="quiz-card">
             <h3><%= quiz.title %></h3>
             <p><%= quiz.description %></p>
-            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>%</p>
-            <a href="/quiz/<%= quiz._id %>/take" class="btn">Start Quiz</a>
+            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>% · Up to <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %> attempt(s)</p>
+            <a href="/quiz/<%= String(quiz._id) %>/take" class="btn">Start Quiz</a>
           </div>
         <% }) %>
       <% } %>
@@ -59,6 +63,13 @@
     .filter-form input {
       width: auto;
       margin-right: 1rem;
+    }
+    .notice {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
     }
   </style>
 </body>

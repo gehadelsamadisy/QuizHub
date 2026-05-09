@@ -19,6 +19,8 @@
     <% if (error) { %>
       <div class="error"><%= error %></div>
     <% } %>
+    <style>.form-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+    .hint { color: #666; font-size: 0.9rem; margin-top: 1rem; }</style>
     <form method="POST" action="/quiz/create">
       <div>
         <label>Title:</label>
@@ -40,8 +42,17 @@
         <label>Passing Score (%):</label>
         <input type="number" name="passingScore" min="0" max="100" required>
       </div>
-      <button type="submit">Create Quiz</button>
+      <div>
+        <label>Attempts allowed per student:</label>
+        <input type="number" name="maxAttemptsPerStudent" min="1" max="50" value="1" required>
+        <p class="hint">How many times each student may submit this quiz (default 1).</p>
+      </div>
+      <div class="form-actions">
+        <button type="submit">Create Quiz</button>
+        <a href="/quiz/my-quizzes" class="btn btn-secondary">Cancel</a>
+      </div>
     </form>
+    <p class="hint">Cancel returns to My Quizzes without saving.</p>
   </div>
 </body>
 </html>

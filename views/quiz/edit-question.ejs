@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit question - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/quiz/<%= quiz._id %>/view">Back to quiz</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Edit question</h1>
+    <p class="quiz-ref"><%= quiz.title %> · Status: <%= quiz.status %></p>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+
+    <form method="POST" action="/quiz/<%= quiz._id %>/questions/<%= question._id %>/edit" id="editForm">
+      <div>
+        <label>Question text</label>
+        <textarea name="text" required rows="4"><%= question.text %></textarea>
+      </div>
+      <div>
+        <label>Type</label>
+        <select name="type" id="qType" class="question-type" onchange="toggleOptions()">
+          <option value="mcq" <%= question.type === 'mcq' ? 'selected' : '' %>>Multiple choice</option>
+          <option value="written" <%= question.type === 'written' ? 'selected' : '' %>>Written answer</option>
+          <option value="file_upload" <%= question.type === 'file_upload' ? 'selected' : '' %>>File upload</option>
+        </select>
+      </div>
+      <div>
+        <label>Points</label>
+        <input type="number" name="points" value="<%= question.points %>" min="1" required>
+      </div>
+
+      <div id="options-edit" class="options-container">
+        <label>Answer choices (minimum 2). Use + / × to change how many options:</label>
+        <div class="options-list" id="edit-options-list"></div>
+        <button type="button" class="add-opt-btn" onclick="addMcqOption()">+ Add option</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn">Save changes</button>
+        <a href="/quiz/<%= quiz._id %>/view" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function optionRowHtml(optIdx, textVal, checked) {
+      var esc = textVal == null ? '' : String(textVal).replace(/"/g, '&quot;')
+      return (
+        '<div class="option">' +
+        '<input type="radio" class="mcq-correct" name="correctOption" value="' + optIdx + '"' + (checked ? ' checked' : '') + '>' +
+        '<input type="text" name="options[' + optIdx + '][text]" placeholder="Option ' + (optIdx + 1) + '" value="' + esc + '">' +
+        '<button type="button" class="remove-option" onclick="removeMcqOption(this)" title="Remove">×</button>' +
+        '</div>'
+      )
+    }
+
+    function seedOptionsFromServer() {
+      var list = document.getElementById('edit-options-list')
+      var type = document.getElementById('qType').value
+      if (type !== 'mcq') return
+      <% if (question.type === 'mcq' && question.options && question.options.length) { %>
+        <% question.options.forEach(function (opt, oi) { %>
+          list.insertAdjacentHTML('beforeend', optionRowHtml(<%= oi %>, <%- JSON.stringify(opt.text != null ? String(opt.text) : '') %>, <%= correctIdx === oi %>))
+        <% }) %>
+      <% } else if (question.type === 'mcq') { %>
+        list.insertAdjacentHTML('beforeend', optionRowHtml(0, '', true))
+        list.insertAdjacentHTML('beforeend', optionRowHtml(1, '', false))
+      <% } %>
+    }
+
+    function addMcqOption() {
+      var list = document.getElementById('edit-options-list')
+      var n = list.querySelectorAll('.option').length
+      list.insertAdjacentHTML('beforeend', optionRowHtml(n, '', false))
+      syncMcqRequired()
+    }
+
+    function removeMcqOption(btn) {
+      var list = document.getElementById('edit-options-list')
+      var rows = list.querySelectorAll('.option')
+      if (rows.length <= 2) {
+        window.alert('Multiple choice needs at least 2 options.')
+        return
+      }
+      btn.closest('.option').remove()
+      reindexMcqOptions()
+    }
+
+    function reindexMcqOptions() {
+      var list = document.getElementById('edit-options-list')
+      list.querySelectorAll('.option').forEach(function (row, i) {
+        var radio = row.querySelector('.mcq-correct')
+        var text = row.querySelector('input[type="text"]')
+        radio.name = 'correctOption'
+        radio.value = String(i)
+        text.name = 'options[' + i + '][text]'
+        text.placeholder = 'Option ' + (i + 1)
+      })
+      syncMcqRequired()
+    }
+
+    function syncMcqRequired() {
+      var type = document.getElementById('qType').value
+      var list = document.getElementById('edit-options-list')
+      var radios = list.querySelectorAll('.mcq-correct')
+      radios.forEach(function (r) { r.required = false })
+      if (type === 'mcq' && radios[0]) radios[0].required = true
+    }
+
+    function toggleOptions() {
+      var wrap = document.getElementById('options-edit')
+      var type = document.getElementById('qType').value
+      var list = document.getElementById('edit-options-list')
+      if (type === 'mcq') {
+        wrap.style.display = 'block'
+        if (!list.querySelector('.option')) {
+          list.insertAdjacentHTML('beforeend', optionRowHtml(0, '', true))
+          list.insertAdjacentHTML('beforeend', optionRowHtml(1, '', false))
+        }
+        var hasChecked = list.querySelector('.mcq-correct:checked')
+        if (!hasChecked && list.querySelector('.mcq-correct')) {
+          list.querySelector('.mcq-correct').checked = true
+        }
+        syncMcqRequired()
+      } else {
+        wrap.style.display = 'none'
+        list.querySelectorAll('.mcq-correct').forEach(function (r) {
+          r.required = false
+          r.checked = false
+        })
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      seedOptionsFromServer()
+      toggleOptions()
+    })
+  </script>
+
+  <style>
+    .quiz-ref { color: #666; margin-bottom: 1rem; }
+    .form-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .options-container { margin: 1rem 0; }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+    .remove-option {
+      background: #ecf0f1;
+      border: 1px solid #bdc3c7;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .add-opt-btn {
+      margin-top: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      background: #ecf0f1;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</body>
+</html>

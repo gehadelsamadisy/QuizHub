@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Quiz Settings - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Edit quiz settings</h1>
+    <p class="meta">Update title, description, subject, time limit, passing score, and attempts per student. Status (draft / published / closed) is unchanged—use My Quizzes or the quiz page for publish, close, or reopen.</p>
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+    <style>.form-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+    .hint { color: #666; font-size: 0.9rem; margin-top: 1rem; }
+    .meta { color: #555; margin-bottom: 1rem; }</style>
+    <form method="POST" action="/quiz/settings/<%= quiz._id %>">
+      <div>
+        <label>Title:</label>
+        <input type="text" name="title" required value="<%= quiz.title %>">
+      </div>
+      <div>
+        <label>Description:</label>
+        <textarea name="description"><%= quiz.description || '' %></textarea>
+      </div>
+      <div>
+        <label>Subject:</label>
+        <input type="text" name="subject" required value="<%= quiz.subject %>">
+      </div>
+      <div>
+        <label>Time Limit (minutes):</label>
+        <input type="number" name="timeLimit" min="1" required value="<%= quiz.timeLimit %>">
+      </div>
+      <div>
+        <label>Passing Score (%):</label>
+        <input type="number" name="passingScore" min="0" max="100" required value="<%= quiz.passingScore %>">
+      </div>
+      <div>
+        <label>Attempts allowed per student:</label>
+        <input type="number" name="maxAttemptsPerStudent" min="1" max="50" required value="<%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %>">
+        <p class="hint">How many times each student may submit this quiz.</p>
+      </div>
+      <div class="form-actions">
+        <button type="submit">Save changes</button>
+        <a href="/quiz/<%= quiz._id %>/view" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

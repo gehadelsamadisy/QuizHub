@@ -26,7 +26,7 @@
           <div class="quiz-card">
             <h3><%= quiz.title %></h3>
             <p><%= quiz.description %></p>
-            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>%</p>
+            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>% | Attempts per student: <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %></p>
             <p>Status: <span class="status <%= quiz.status %>"><%= quiz.status %></span></p>
             <div class="quiz-actions">
               <% if (quiz.status === 'draft') { %>
@@ -34,7 +34,28 @@
                 <form method="POST" action="/quiz/<%= quiz._id %>/publish" style="display:inline;">
                   <button type="submit">Publish</button>
                 </form>
+                <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Delete this draft quiz permanently?');">
+                  <button type="submit" class="btn-danger">Delete</button>
+                </form>
               <% } %>
+              <% if (quiz.status === 'published') { %>
+                <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
+                <form method="POST" action="/quiz/<%= quiz._id %>/close" style="display:inline;" onsubmit="return confirm('Stop this quiz for students? They will no longer see it or start it.');">
+                  <button type="submit" class="btn-warning">Close</button>
+                </form>
+                <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('DELETE this quiz and ALL student attempts permanently?');">
+                  <button type="submit" class="btn-delete-all">Remove completely</button>
+                </form>
+              <% } %>
+              <% if (quiz.status === 'closed') { %>
+                <form method="POST" action="/quiz/<%= quiz._id %>/reopen" style="display:inline;" onsubmit="return confirm('Make this quiz available to students again? It will appear in Browse and new attempts can start (within attempt limits).');">
+                  <button type="submit" class="btn-reopen">Make available again</button>
+                </form>
+                <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Delete this quiz and all saved attempts permanently?');">
+                  <button type="submit" class="btn-delete-all">Delete</button>
+                </form>
+              <% } %>
+              <a href="/quiz/settings/<%= quiz._id %>" class="btn btn-secondary">Edit settings</a>
               <a href="/quiz/<%= quiz._id %>/view" class="btn btn-secondary">View</a>
             </div>
           </div>
@@ -67,4 +88,40 @@
 .quiz-actions a, .quiz-actions button {
   margin-right: 0.5rem;
 }
+.quiz-actions .btn-danger {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.quiz-actions .btn-danger:hover { background: #a93226; }
+.quiz-actions .btn-warning {
+  background: #e67e22;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.quiz-actions .btn-warning:hover { background: #ca6f1d; }
+.quiz-actions .btn-delete-all {
+  background: #922b21;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.quiz-actions .btn-delete-all:hover { background: #7b241c; }
+.quiz-actions .btn-reopen {
+  background: #1e8449;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.quiz-actions .btn-reopen:hover { background: #196f3d; }
 </style>

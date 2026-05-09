@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Submissions - <%= quiz.title %> - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/quiz/<%= quiz._id %>/view">Quiz overview</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Student submissions</h1>
+    <p class="meta"><%= quiz.title %> · <%= quiz.subject %></p>
+
+    <% if (!attempts || attempts.length === 0) { %>
+      <p>No submitted attempts yet.</p>
+    <% } else { %>
+      <table class="submissions-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Submitted</th>
+            <th>Score</th>
+            <th>Grading</th>
+            <th>Released</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% attempts.forEach(function (att) {
+            const st = att.studentId
+            const name = st && st.name ? st.name : 'Student'
+            const email = st && st.email ? st.email : ''
+          %>
+            <tr>
+              <td><%= name %><% if (email) { %><br><span class="muted"><%= email %></span><% } %></td>
+              <td><%= att.submittedAt ? att.submittedAt.toLocaleString() : '—' %></td>
+              <td><%= att.totalScore %> / <%= att.maxScore %></td>
+              <td><%= att.gradingStatus %></td>
+              <td><%= att.gradesReleased ? 'Yes' : 'No' %></td>
+              <td><a href="/quiz/<%= quiz._id %>/submissions/<%= att._id %>" class="btn">Grade / review</a></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <style>
+    .meta { color: #555; margin-bottom: 1rem; }
+    .muted { color: #777; font-size: 0.85rem; }
+    .submissions-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+    .submissions-table th,
+    .submissions-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .submissions-table th { background: #f8f9fa; }
+    .btn { font-size: 0.9rem; padding: 0.35rem 0.75rem; }
+  </style>
+</body>
+</html>

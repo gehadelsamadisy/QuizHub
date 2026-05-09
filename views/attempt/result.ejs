@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quiz result - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/browse">Browse</a>
+      <a href="/attempt/history">My Results</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1><%= quiz.title %></h1>
+
+    <% if (typeof resultsLocked !== 'undefined' && resultsLocked) { %>
+      <div class="banner locked">
+        <strong>Submission received.</strong> Detailed scores and answers will appear here after your instructor releases grades.
+      </div>
+      <% if (attempt.submittedAt) { %>
+        <p class="muted">Submitted <%= attempt.submittedAt.toLocaleString() %></p>
+      <% } %>
+      <p style="margin-top: 2rem;">
+        <a href="/quiz/browse" class="btn">Back to quizzes</a>
+        <a href="/attempt/history" class="btn btn-secondary">My results</a>
+      </p>
+    <% } else { %>
+
+    <% if (attempt.gradingStatus === 'pending-review') { %>
+      <div class="banner pending">This quiz included questions that needed manual grading.</div>
+    <% } %>
+
+    <% const pct = attempt.maxScore > 0 ? Math.round((attempt.totalScore / attempt.maxScore) * 100) : 0 %>
+    <% const pctClass = attempt.gradingStatus === 'fully-graded'
+      ? (attempt.passed ? 'pct-pass' : 'pct-fail')
+      : 'pct-pending' %>
+    <div class="score-summary">
+      <p><strong>Score:</strong> <%= attempt.totalScore %> / <%= attempt.maxScore %></p>
+      <p><strong>Percentage:</strong> <span class="<%= pctClass %>"><%= pct %>%</span></p>
+      <% if (attempt.gradingStatus === 'fully-graded') { %>
+        <p><strong>Result:</strong>
+          <% if (attempt.passed) { %>
+            <span class="label-pass">Passed</span>
+          <% } else { %>
+            <span class="label-fail">Failed</span>
+          <% } %>
+          <span class="passing-bar"> (passing <%= quiz.passingScore %>%)</span></p>
+      <% } else { %>
+        <p><strong>Result:</strong> <span class="result-pending">Pending full grading</span></p>
+      <% } %>
+      <% if (attempt.submittedAt) { %>
+        <p class="muted">Submitted <%= attempt.submittedAt.toLocaleString() %></p>
+      <% } %>
+    </div>
+
+    <h2>Review</h2>
+    <% questions.forEach((q, qi) => {
+      const ans = answerMap[q._id.toString()]
+      const correctIdx = (q.options || []).findIndex(function (o) { return o.isCorrect })
+    %>
+      <div class="question-block">
+        <p class="q-head"><strong>Question <%= qi + 1 %></strong></p>
+        <p class="q-text"><%= q.text %></p>
+
+        <% if (q.type === 'mcq' && ans) { %>
+          <p>Your answer: <%= ans.selectedOption != null ? ('Option ' + (ans.selectedOption + 1)) : 'No answer' %></p>
+          <p>Correct: Option <%= correctIdx >= 0 ? (correctIdx + 1) : '—' %></p>
+          <p class="<%= ans.isCorrect ? 'ok' : 'bad' %>"><%= ans.isCorrect ? 'Correct' : 'Incorrect' %> · <%= ans.score %> / <%= q.points %> pts</p>
+        <% } else if (q.type === 'written' && ans) { %>
+          <p>Your answer:</p>
+          <pre class="answer-text"><%= ans.textAnswer || '(empty)' %></pre>
+          <p><strong>Points:</strong> <%= ans.score %> / <%= q.points %></p>
+        <% } else if (q.type === 'file_upload') { %>
+          <p class="muted">File submission</p>
+          <% if (ans) { %><p><strong>Points:</strong> <%= ans.score %> / <%= q.points %></p><% } %>
+        <% } %>
+      </div>
+    <% }) %>
+
+    <p style="margin-top: 2rem;">
+      <a href="/quiz/browse" class="btn">Back to quizzes</a>
+      <a href="/attempt/history" class="btn btn-secondary">My results</a>
+    </p>
+    <% } %>
+  </div>
+
+  <style>
+    .score-summary {
+      background: #fff;
+      padding: 1.25rem;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      margin: 1rem 0;
+    }
+    .pct-pass {
+      color: #1e8449;
+      font-weight: 700;
+      font-size: 1.2em;
+    }
+    .pct-fail {
+      color: #c0392b;
+      font-weight: 700;
+      font-size: 1.2em;
+    }
+    .pct-pending {
+      color: #d68910;
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+    .label-pass {
+      display: inline-block;
+      margin-left: 0.25rem;
+      padding: 0.15rem 0.65rem;
+      border-radius: 6px;
+      background: #d5f4e6;
+      color: #1e8449;
+      font-weight: 700;
+    }
+    .label-fail {
+      display: inline-block;
+      margin-left: 0.25rem;
+      padding: 0.15rem 0.65rem;
+      border-radius: 6px;
+      background: #fadbd8;
+      color: #922b21;
+      font-weight: 700;
+    }
+    .passing-bar {
+      color: #555;
+      font-weight: normal;
+    }
+    .result-pending {
+      color: #d68910;
+      font-weight: 600;
+    }
+    .banner.pending {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    .banner.locked {
+      background: #e8f4fc;
+      border: 1px solid #3498db;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    .question-block {
+      background: #fff;
+      padding: 1.25rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .ok { color: #27ae60; }
+    .bad { color: #c0392b; }
+    .muted { color: #666; font-size: 0.9rem; }
+    .answer-text {
+      white-space: pre-wrap;
+      background: #f9f9f9;
+      padding: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+  </style>
+</body>
+</html>

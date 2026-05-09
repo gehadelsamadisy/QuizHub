@@ -18,6 +18,17 @@
     <h1>Add Questions to: <%= quiz.title %></h1>
     <p>Status: <%= quiz.status %> | Subject: <%= quiz.subject %></p>
 
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+
+    <% if (quiz.status === 'published') { %>
+      <div class="banner-live">This quiz is live — students see new questions after you save.</div>
+    <% } %>
+    <% if (quiz.status === 'draft') { %>
+      <p class="hint">Save adds questions to this draft. Publish from My Quizzes when ready.</p>
+    <% } %>
+
     <form method="POST" action="/quiz/<%= quiz._id %>/add-questions" id="quizForm">
       <div id="questions-container">
         <div class="question-block" data-index="0">
@@ -39,101 +50,177 @@
             <input type="number" name="questions[0][points]" value="1" min="1">
           </div>
           <div class="options-container" id="options-0">
-            <label>Options:</label>
-            <div class="option">
-              <input type="radio" name="questions[0][correctOption]" value="0" required>
-              <input type="text" name="questions[0][options][0][text]" placeholder="Option 1">
-            </div>
-            <div class="option">
-              <input type="radio" name="questions[0][correctOption]" value="1">
-              <input type="text" name="questions[0][options][1][text]" placeholder="Option 2">
-            </div>
-            <div class="option">
-              <input type="radio" name="questions[0][correctOption]" value="2">
-              <input type="text" name="questions[0][options][2][text]" placeholder="Option 3">
-            </div>
-            <div class="option">
-              <input type="radio" name="questions[0][correctOption]" value="3">
-              <input type="text" name="questions[0][options][3][text]" placeholder="Option 4">
-            </div>
+            <label>Answer choices (minimum 2). Use the buttons to add or remove options:</label>
+            <div class="options-list" data-question-index="0"></div>
+            <button type="button" class="add-opt-btn" onclick="addMcqOption(0)">+ Add option</button>
           </div>
           <button type="button" onclick="removeQuestion(0)">Remove Question</button>
           <hr>
         </div>
       </div>
 
-      <button type="button" onclick="addQuestion()">Add Another Question</button>
-      <button type="submit">Save Questions</button>
+      <div class="form-footer">
+        <button type="button" onclick="addQuestion()">Add Another Question</button>
+        <button type="submit" class="btn">Save Questions</button>
+        <a href="/quiz/my-quizzes" class="btn btn-secondary">Back to My Quizzes</a>
+      </div>
     </form>
+
+    <% if (quiz.status === 'draft') { %>
+      <form method="POST" action="/quiz/<%= quiz._id %>/delete" class="danger-zone" onsubmit="return confirm('Delete this draft quiz and all its data? This cannot be undone.');">
+        <button type="submit" class="btn-danger">Delete this draft quiz</button>
+      </form>
+    <% } else if (quiz.status === 'published') { %>
+      <p class="danger-zone hint">To stop students from starting this quiz, go to <a href="/quiz/<%= quiz._id %>/view">View</a> or My Quizzes and use <strong>Close</strong>. To remove it entirely, use <strong>Delete quiz completely</strong> there.</p>
+    <% } %>
   </div>
 
   <script>
     let questionCount = 1
 
+    function optionRowHtml(qIdx, optIdx) {
+      return (
+        '<div class="option">' +
+        '<input type="radio" class="mcq-correct" name="questions[' + qIdx + '][correctOption]" value="' + optIdx + '">' +
+        '<input type="text" name="questions[' + qIdx + '][options][' + optIdx + '][text]" placeholder="Option ' + (optIdx + 1) + '">' +
+        '<button type="button" class="remove-option" onclick="removeMcqOption(this)" title="Remove this option">×</button>' +
+        '</div>'
+      )
+    }
+
+    function fillDefaultOptions(qIdx) {
+      const list = document.querySelector('#options-' + qIdx + ' .options-list')
+      if (!list || list.querySelector('.option')) return
+      list.insertAdjacentHTML('beforeend', optionRowHtml(qIdx, 0))
+      list.insertAdjacentHTML('beforeend', optionRowHtml(qIdx, 1))
+    }
+
+    function addMcqOption(qIdx) {
+      const list = document.querySelector('#options-' + qIdx + ' .options-list')
+      if (!list) return
+      const n = list.querySelectorAll('.option').length
+      list.insertAdjacentHTML('beforeend', optionRowHtml(qIdx, n))
+      syncMcqRequired(qIdx)
+    }
+
+    function removeMcqOption(btn) {
+      const list = btn.closest('.options-list')
+      const rows = list.querySelectorAll('.option')
+      if (rows.length <= 2) {
+        window.alert('Multiple choice needs at least 2 options.')
+        return
+      }
+      btn.closest('.option').remove()
+      reindexMcqOptions(list)
+    }
+
+    function reindexMcqOptions(list) {
+      const qIdx = parseInt(list.getAttribute('data-question-index'), 10)
+      list.querySelectorAll('.option').forEach(function (row, i) {
+        const radio = row.querySelector('.mcq-correct')
+        const text = row.querySelector('input[type="text"]')
+        radio.name = 'questions[' + qIdx + '][correctOption]'
+        radio.value = String(i)
+        text.name = 'questions[' + qIdx + '][options][' + i + '][text]'
+        text.placeholder = 'Option ' + (i + 1)
+      })
+      syncMcqRequired(qIdx)
+    }
+
+    function syncMcqRequired(qIdx) {
+      const block = document.querySelector('.question-block[data-index="' + qIdx + '"]')
+      if (!block) return
+      const sel = block.querySelector('.question-type')
+      const list = document.querySelector('#options-' + qIdx + ' .options-list')
+      if (!list) return
+      const radios = list.querySelectorAll('.mcq-correct')
+      radios.forEach(function (r) { r.required = false })
+      if (sel && sel.value === 'mcq' && radios[0]) radios[0].required = true
+    }
+
     function addQuestion() {
       const container = document.getElementById('questions-container')
-      const html = `
-        <div class="question-block" data-index="${questionCount}">
-          <h3>Question ${questionCount + 1}</h3>
-          <div>
-            <label>Question Text:</label>
-            <textarea name="questions[${questionCount}][text]" required></textarea>
-          </div>
-          <div>
-            <label>Question Type:</label>
-            <select name="questions[${questionCount}][type]" class="question-type" onchange="toggleOptions(this, ${questionCount})">
-              <option value="mcq">Multiple Choice</option>
-              <option value="written">Written Answer</option>
-              <option value="file_upload">File Upload</option>
-            </select>
-          </div>
-          <div>
-            <label>Points:</label>
-            <input type="number" name="questions[${questionCount}][points]" value="1" min="1">
-          </div>
-          <div class="options-container" id="options-${questionCount}">
-            <label>Options:</label>
-            <div class="option">
-              <input type="radio" name="questions[${questionCount}][correctOption]" value="0" required>
-              <input type="text" name="questions[${questionCount}][options][0][text]" placeholder="Option 1">
-            </div>
-            <div class="option">
-              <input type="radio" name="questions[${questionCount}][correctOption]" value="1">
-              <input type="text" name="questions[${questionCount}][options][1][text]" placeholder="Option 2">
-            </div>
-            <div class="option">
-              <input type="radio" name="questions[${questionCount}][correctOption]" value="2">
-              <input type="text" name="questions[${questionCount}][options][2][text]" placeholder="Option 3">
-            </div>
-            <div class="option">
-              <input type="radio" name="questions[${questionCount}][correctOption]" value="3">
-              <input type="text" name="questions[${questionCount}][options][3][text]" placeholder="Option 4">
-            </div>
-          </div>
-          <button type="button" onclick="removeQuestion(${questionCount})">Remove Question</button>
-          <hr>
-        </div>
-      `
+      const html =
+        '<div class="question-block" data-index="' + questionCount + '">' +
+        '<h3>Question ' + (questionCount + 1) + '</h3>' +
+        '<div><label>Question Text:</label><textarea name="questions[' + questionCount + '][text]" required></textarea></div>' +
+        '<div><label>Question Type:</label>' +
+        '<select name="questions[' + questionCount + '][type]" class="question-type" onchange="toggleOptions(this, ' + questionCount + ')">' +
+        '<option value="mcq">Multiple Choice</option>' +
+        '<option value="written">Written Answer</option>' +
+        '<option value="file_upload">File Upload</option></select></div>' +
+        '<div><label>Points:</label><input type="number" name="questions[' + questionCount + '][points]" value="1" min="1"></div>' +
+        '<div class="options-container" id="options-' + questionCount + '">' +
+        '<label>Answer choices (minimum 2). Use the buttons to add or remove options:</label>' +
+        '<div class="options-list" data-question-index="' + questionCount + '"></div>' +
+        '<button type="button" class="add-opt-btn" onclick="addMcqOption(' + questionCount + ')">+ Add option</button>' +
+        '</div>' +
+        '<button type="button" onclick="removeQuestion(' + questionCount + ')">Remove Question</button><hr></div>'
       container.insertAdjacentHTML('beforeend', html)
+      fillDefaultOptions(questionCount)
+      const idx = questionCount
+      const block = container.querySelector('[data-index="' + idx + '"]')
+      const sel = block && block.querySelector('.question-type')
+      if (sel) toggleOptions(sel, idx)
       questionCount++
     }
 
     function removeQuestion(index) {
-      const block = document.querySelector(`[data-index="${index}"]`)
+      const block = document.querySelector('[data-index="' + index + '"]')
       if (block) block.remove()
     }
 
     function toggleOptions(select, index) {
-      const optionsContainer = document.getElementById(`options-${index}`)
+      const optionsContainer = document.getElementById('options-' + index)
+      const list = optionsContainer.querySelector('.options-list')
+      const radios = list.querySelectorAll('.mcq-correct')
       if (select.value === 'mcq') {
         optionsContainer.style.display = 'block'
+        fillDefaultOptions(index)
+        radios.forEach(function (r) {
+          r.required = false
+          r.checked = false
+        })
+        if (radios[0]) radios[0].required = true
       } else {
         optionsContainer.style.display = 'none'
+        radios.forEach(function (r) {
+          r.required = false
+          r.checked = false
+        })
       }
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      fillDefaultOptions(0)
+      document.querySelectorAll('.question-block').forEach(function (block) {
+        const sel = block.querySelector('.question-type')
+        const idx = block.getAttribute('data-index')
+        if (sel && idx !== null) toggleOptions(sel, parseInt(idx, 10))
+      })
+    })
   </script>
 
   <style>
+    .form-footer { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 1rem; }
+    .danger-zone { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
+    .btn-danger {
+      background: #c0392b;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-danger:hover { background: #a93226; }
+    .banner-live {
+      background: #d5f4e6;
+      border: 1px solid #27ae60;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .hint { color: #555; font-size: 0.95rem; margin-bottom: 1rem; }
     .question-block {
       background: white;
       padding: 1rem;
@@ -146,6 +233,27 @@
       gap: 0.5rem;
       margin: 0.5rem 0;
     }
+    .remove-option {
+      background: #ecf0f1;
+      border: 1px solid #bdc3c7;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .remove-option:hover { background: #dfe6e9; }
+    .add-opt-btn {
+      margin-top: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      background: #ecf0f1;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-opt-btn:hover { background: #dfe6e9; }
+    .options-container label:first-child { display: block; margin-bottom: 0.5rem; }
   </style>
 </body>
 </html>

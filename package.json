@@ -21,9 +21,10 @@
     "bcrypt": "^6.0.0",
     "chart.js": "^4.5.1",
     "connect-mongo": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "ejs": "^5.0.2",
     "express": "^5.2.1",
-    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.6.1",
     "multer": "^2.1.1"
   }

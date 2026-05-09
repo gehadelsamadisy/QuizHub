@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My results - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/browse">Browse Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>My results</h1>
+
+    <% if (!attempts || attempts.length === 0) { %>
+      <p>No attempts yet. <a href="/quiz/browse">Browse quizzes</a> to get started.</p>
+    <% } else { %>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Quiz</th>
+            <th>Subject</th>
+            <th>Submitted</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% attempts.forEach(function (a) {
+            const quiz = a.quizId
+            const title = quiz && quiz.title ? quiz.title : 'Quiz'
+            const subj = quiz && quiz.subject ? quiz.subject : '—'
+          %>
+            <tr>
+              <td><%= title %></td>
+              <td><%= subj %></td>
+              <td><%= a.submittedAt ? a.submittedAt.toLocaleString() : '—' %></td>
+              <td>
+                <% if (a.submittedAt && a.gradesReleased === false) { %>
+                  Pending release
+                <% } else if (a.submittedAt) { %>
+                  <%= a.totalScore %> / <%= a.maxScore %>
+                <% } else { %>
+                  In progress
+                <% } %>
+              </td>
+              <td><%= a.gradingStatus %></td>
+              <td><a href="/attempt/<%= a._id %>">View</a></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <style>
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+    .history-table th,
+    .history-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .history-table th { background: #f8f9fa; }
+  </style>
+</body>
+</html>
