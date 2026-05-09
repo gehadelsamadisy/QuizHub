@@ -335,4 +335,17 @@ router.post(
   },
 );
 
+router.get('/:id/view', requireAuth, requireRole(['teacher']), async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.id);
+    if (!quiz || quiz.createdBy.toString() !== req.session.user.id) {
+      return res.redirect('/quiz/my-quizzes');
+    }
+    const questions = await Question.find({ quizId: quiz._id });
+    res.render('quiz/view', { quiz, questions });
+  } catch (err) {
+    res.redirect('/quiz/my-quizzes');
+  }
+});
+
 module.exports = router;

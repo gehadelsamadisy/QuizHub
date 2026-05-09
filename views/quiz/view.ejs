@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= quiz.title %> - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">QuizHub</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/quiz/my-quizzes">My Quizzes</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <div class="dashboard">
+      <h1><%= quiz.title %></h1>
+      <p><%= quiz.description %></p>
+      <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>%</p>
+      <p>Status: <span class="status <%= quiz.status %>"><%= quiz.status %></span></p>
+      <a href="/quiz/my-quizzes" class="btn btn-secondary">Back to My Quizzes</a>
+    </div>
+
+    <h2>Questions (<%= questions.length %>)</h2>
+
+    <% if (questions.length === 0) { %>
+      <div class="dashboard">
+        <p>No questions added yet.</p>
+        <% if (quiz.status === 'draft') { %>
+          <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
+        <% } %>
+      </div>
+    <% } else { %>
+      <% questions.forEach((question, index) => { %>
+        <div class="dashboard question-card">
+          <h3>Question <%= index + 1 %> 
+            <span class="status <%= question.type %>"><%= question.type %></span>
+            <span style="float:right"><%= question.points %> pt(s)</span>
+          </h3>
+          <p><%= question.text %></p>
+
+          <% if (question.type === 'mcq') { %>
+            <ul style="list-style:none; padding:0;">
+              <% question.options.forEach((option, i) => { %>
+                <li style="padding: 0.3rem 0;">
+                  <% if (option.isCorrect) { %>
+                    <span style="color: green; font-weight: bold;">✓</span>
+                  <% } else { %>
+                    <span style="color: #ccc;">○</span>
+                  <% } %>
+                  <%= option.text %>
+                </li>
+              <% }) %>
+            </ul>
+          <% } else if (question.type === 'written') { %>
+            <p style="color: #666; font-style: italic;">Students will type a written answer.</p>
+          <% } else if (question.type === 'file_upload') { %>
+            <p style="color: #666; font-style: italic;">Students will upload a file (image or PDF).</p>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <style>
+    .question-card { margin-top: 1rem; }
+    .status { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; color: white; }
+    .status.draft { background: #f39c12; }
+    .status.published { background: #27ae60; }
+    .status.closed { background: #e74c3c; }
+    .status.mcq { background: #3498db; }
+    .status.written { background: #9b59b6; }
+    .status.file_upload { background: #e67e22; }
+  </style>
+</body>
+</html>
