@@ -219,3 +219,50 @@ button:hover, .btn:hover {
 .cta .btn {
   margin-right: 1rem;
 }
+.home-page {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.hero {
+  width: 100%;
+  max-width: 900px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.dashboard-card {
+  background: white;
+  padding: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  margin-top: 2rem;
+}
+
+.dashboard-card h2 {
+  margin-bottom: 1rem;
+}
+
+.dashboard-card p {
+  margin-bottom: 1.5rem;
+}
+
+.cta {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
