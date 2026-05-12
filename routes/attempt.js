@@ -151,13 +151,14 @@ router.post('/:attemptId/submit', requireAuth, requireRole(['student']), handleF
 
     if (lateMs > 60 * 1000) {
       const endsAt = deadline.toISOString()
-      return res.render('attempt/take', {
-        attempt,
-        quiz,
-        questions: stripQuestionsForTake(questions),
-        endsAt,
-        error: 'Time expired. Submission not accepted.'
-      })
+      // return res.render('attempt/take', {
+      //   attempt,
+      //   quiz,
+      //   questions: stripQuestionsForTake(questions),
+      //   endsAt,
+      //   error: 'Time expired. Submission not accepted.'
+      // })
+      return res.redirect('/attempt/history')
     }
 
     const mcq = req.body.mcq || {}
