@@ -88,6 +88,10 @@ async function recalculateAttemptFromAnswers(attempt, quiz) {
     max > 0 && (total / max) * 100 >= (quiz.passingScore || 0)
 }
 
+function canModifyQuiz(quiz) {
+  return quiz && ['draft', 'closed'].includes(quiz.status)
+}
+
 router.get('/create', requireAuth, requireRole(['teacher']), (req, res) => {
   res.render('quiz/create', { error: null })
 })
@@ -140,7 +144,7 @@ router.get('/browse', requireAuth, requireRole(['student']), async (req, res) =>
 router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
     res.render('quiz/edit', { quiz, error: null })
@@ -152,7 +156,7 @@ router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, r
 router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
     const { title, description, subject, timeLimit, passingScore, maxAttemptsPerStudent } =
@@ -325,7 +329,7 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || quiz.status === 'closed') {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
     const question = await Question.findOne({
@@ -354,7 +358,7 @@ router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['tea
 router.post('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || quiz.status === 'closed') {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
     const question = await Question.findOne({
@@ -504,10 +508,7 @@ router.get('/:id/edit', requireAuth, requireRole(['teacher']), (req, res) => {
 router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
-      return res.redirect('/quiz/my-quizzes')
-    }
-    if (quiz.status === 'closed') {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
     res.render('quiz/add-questions', { quiz, error: null })
@@ -519,10 +520,7 @@ router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (r
 router.post('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
-      return res.redirect('/quiz/my-quizzes')
-    }
-    if (quiz.status === 'closed') {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
 
@@ -597,7 +595,7 @@ router.post('/:id/reopen', requireAuth, requireRole(['teacher']), async (req, re
 router.post('/:id/delete', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
     await deleteQuizAndRelatedData(quiz._id)

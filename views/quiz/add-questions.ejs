@@ -22,11 +22,8 @@
       <div class="error"><%= error %></div>
     <% } %>
 
-    <% if (quiz.status === 'published') { %>
-      <div class="banner-live">This quiz is live — students see new questions after you save.</div>
-    <% } %>
-    <% if (quiz.status === 'draft') { %>
-      <p class="hint">Save adds questions to this draft. Publish from My Quizzes when ready.</p>
+    <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
+      <p class="hint">Save adds questions to this <%= quiz.status %> quiz.</p>
     <% } %>
 
     <form method="POST" action="/quiz/<%= quiz._id %>/add-questions" id="quizForm">
@@ -66,12 +63,10 @@
       </div>
     </form>
 
-    <% if (quiz.status === 'draft') { %>
-      <form method="POST" action="/quiz/<%= quiz._id %>/delete" class="danger-zone" onsubmit="return confirm('Delete this draft quiz and all its data? This cannot be undone.');">
-        <button type="submit" class="btn-danger">Delete this draft quiz</button>
+    <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
+      <form method="POST" action="/quiz/<%= quiz._id %>/delete" class="danger-zone" onsubmit="return confirm('Delete this quiz and all its data? This cannot be undone.');">
+        <button type="submit" class="btn-danger">Delete this quiz</button>
       </form>
-    <% } else if (quiz.status === 'published') { %>
-      <p class="danger-zone hint">To stop students from starting this quiz, go to <a href="/quiz/<%= quiz._id %>/view">View</a> or My Quizzes and use <strong>Close</strong>. To remove it entirely, use <strong>Delete quiz completely</strong> there.</p>
     <% } %>
   </div>
 

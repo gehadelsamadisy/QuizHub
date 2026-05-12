@@ -21,14 +21,18 @@
 
     <h2>Questions (<%= questions.length %>)</h2>
     <% if (questions.length === 0) { %>
-      <p>No questions yet. <a href="/quiz/<%= quiz._id %>/add-questions">Add questions</a></p>
+      <p>No questions yet.
+        <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
+          <a href="/quiz/<%= quiz._id %>/add-questions">Add questions</a>
+        <% } %>
+      </p>
     <% } else { %>
       <% questions.forEach((q, i) => { %>
         <div class="question-preview">
           <p>
             <strong>Q<%= i + 1 %>.</strong> <%= q.text %>
             <span class="badge"><%= q.type %> · <%= q.points %> pt</span>
-            <% if (quiz.status === 'draft' || quiz.status === 'published') { %>
+            <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
               <a href="/quiz/<%= quiz._id %>/questions/<%= q._id %>/edit" class="btn-edit-q">Edit</a>
             <% } %>
           </p>
@@ -45,17 +49,16 @@
 
     <div class="teacher-actions" style="margin-top: 2rem;">
       <a href="/quiz/my-quizzes" class="btn btn-secondary">Back to My Quizzes</a>
-      <a href="/quiz/settings/<%= quiz._id %>" class="btn">Edit quiz settings</a>
+      <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
+        <a href="/quiz/settings/<%= quiz._id %>" class="btn">Edit quiz settings</a>
+      <% } %>
       <a href="/quiz/<%= quiz._id %>/submissions" class="btn">Student submissions</a>
-      <% if (quiz.status === 'draft' || quiz.status === 'published') { %>
+      <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
         <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add or edit questions</a>
       <% } %>
       <% if (quiz.status === 'published') { %>
         <form method="POST" action="/quiz/<%= quiz._id %>/close" style="display:inline;" onsubmit="return confirm('Close this quiz? Students will no longer see it or be able to start it. Existing attempts stay saved.');">
           <button type="submit" class="btn-warning">Close quiz for students</button>
-        </form>
-        <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Permanently DELETE this quiz and ALL student attempts and results? This cannot be undone.');">
-          <button type="submit" class="btn-delete-all">Delete quiz completely</button>
         </form>
       <% } %>
       <% if (quiz.status === 'closed') { %>

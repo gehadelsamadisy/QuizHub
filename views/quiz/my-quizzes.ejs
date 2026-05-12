@@ -39,15 +39,12 @@
                 </form>
               <% } %>
               <% if (quiz.status === 'published') { %>
-                <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
                 <form method="POST" action="/quiz/<%= quiz._id %>/close" style="display:inline;" onsubmit="return confirm('Stop this quiz for students? They will no longer see it or start it.');">
                   <button type="submit" class="btn-warning">Close</button>
                 </form>
-                <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('DELETE this quiz and ALL student attempts permanently?');">
-                  <button type="submit" class="btn-delete-all">Remove completely</button>
-                </form>
               <% } %>
               <% if (quiz.status === 'closed') { %>
+                <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
                 <form method="POST" action="/quiz/<%= quiz._id %>/reopen" style="display:inline;" onsubmit="return confirm('Make this quiz available to students again? It will appear in Browse and new attempts can start (within attempt limits).');">
                   <button type="submit" class="btn-reopen">Make available again</button>
                 </form>
@@ -55,7 +52,9 @@
                   <button type="submit" class="btn-delete-all">Delete</button>
                 </form>
               <% } %>
-              <a href="/quiz/settings/<%= quiz._id %>" class="btn btn-secondary">Edit settings</a>
+              <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
+                <a href="/quiz/settings/<%= quiz._id %>" class="btn btn-secondary">Edit settings</a>
+              <% } %>
               <a href="/quiz/<%= quiz._id %>/view" class="btn btn-secondary">View</a>
             </div>
           </div>
