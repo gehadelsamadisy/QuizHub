@@ -17,7 +17,7 @@
 
     <div id="timer" class="timer" aria-live="polite"></div>
 
-    <form id="quiz-form" method="POST" action="/attempt/<%= attempt._id %>/submit">
+    <form id="quiz-form" method="POST" action="/attempt/<%= attempt._id %>/submit" enctype="multipart/form-data">
       <% questions.forEach((q, qi) => { %>
         <div class="question-block">
           <p class="q-head"><strong>Question <%= qi + 1 %></strong>
@@ -36,7 +36,11 @@
           <% } else if (q.type === 'written') { %>
             <textarea name="written[<%= q._id %>]" rows="5" placeholder="Your answer"></textarea>
           <% } else if (q.type === 'file_upload') { %>
-            <p class="muted">File upload for this question is not enabled in this build. Your submission will be marked for manual review.</p>
+            <label class="file-upload">
+              <span>Upload image or PDF</span>
+              <input type="file" name="file[<%= q._id %>]" accept="image/*,application/pdf">
+            </label>
+            <p class="muted">Accepted file types: image or PDF. Maximum size: 10 MB.</p>
           <% } %>
         </div>
       <% }) %>
@@ -94,6 +98,12 @@
     .pts { color: #666; font-weight: normal; }
     .q-text { margin-bottom: 1rem; }
     .option-row { display: block; margin: 0.5rem 0; cursor: pointer; }
+    .file-upload {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-width: 28rem;
+    }
     .muted { color: #666; font-size: 0.9rem; }
   </style>
 </body>

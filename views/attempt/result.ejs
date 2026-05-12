@@ -68,7 +68,11 @@
           <pre class="answer-text"><%= ans.textAnswer || '(empty)' %></pre>
           <p><strong>Points:</strong> <%= ans.score %> / <%= q.points %></p>
         <% } else if (q.type === 'file_upload') { %>
-          <p class="muted">File submission</p>
+          <% if (ans && ans.uploadedFile) { %>
+            <p>Uploaded file: <a href="<%= ans.uploadedFile %>" target="_blank" rel="noopener">View file</a></p>
+          <% } else { %>
+            <p class="muted">No file uploaded.</p>
+          <% } %>
           <% if (ans) { %><p><strong>Points:</strong> <%= ans.score %> / <%= q.points %></p><% } %>
         <% } %>
       </div>
