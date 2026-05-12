@@ -5,30 +5,7 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <nav>
-    <div class="nav-brand">QuizHub</div>
-    <div class="nav-links">
-      <% if (user) { %>
-        <span>Welcome, <%= user.name %> (<%= user.role %>)</span>
-        <a href="/user/profile">Profile</a>
-        <% if (user.role === 'teacher') { %>
-          <a href="/quiz/create">Create Quiz</a>
-          <a href="/quiz/my-quizzes">My Quizzes</a>
-        <% } %>
-        <% if (user.role === 'student') { %>
-          <a href="/quiz/browse">Browse Quizzes</a>
-          <a href="/attempt/history">My Results</a>
-        <% } %>
-        <% if (user.role === 'admin') { %>
-          <a href="/admin/users">Admin Panel</a>
-        <% } %>
-        <a href="/logout">Logout</a>
-      <% } else { %>
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
-      <% } %>
-    </div>
-  </nav>
+  <%- include('partials/navbar') %>
 
   <div class="container">
     <h1>Welcome to QuizHub</h1>

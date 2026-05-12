@@ -5,14 +5,7 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <nav>
-    <div class="nav-brand">QuizHub</div>
-    <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/quiz/my-quizzes">My Quizzes</a>
-      <a href="/logout">Logout</a>
-    </div>
-  </nav>
+  <%- include('../partials/navbar') %>
 
   <div class="container">
     <h1><%= quiz.title %></h1>

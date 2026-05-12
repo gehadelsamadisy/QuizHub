@@ -127,6 +127,71 @@ router.get('/my-quizzes', requireAuth, requireRole(['teacher']), async (req, res
   }
 })
 
+router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.id)
+    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
+      return res.redirect('/quiz/my-quizzes')
+    }
+
+    const attempts = await Attempt.find({
+      quizId: quiz._id,
+      submittedAt: { $exists: true, $ne: null }
+    })
+
+    const gradedAttempts = attempts.filter(
+      (attempt) => attempt.gradingStatus !== 'pending-review'
+    )
+
+    const totalAttempts = attempts.length
+    const gradedCount = gradedAttempts.length
+    const totalScore = gradedAttempts.reduce(
+      (sum, attempt) => sum + (attempt.totalScore || 0),
+      0
+    )
+    const quizQuestions = await Question.find({ quizId: quiz._id })
+    const quizMaxScore = quizQuestions.reduce(
+      (sum, q) => sum + (q.points || 1),
+      0
+    )
+    const averageScore = gradedCount ? totalScore / gradedCount : 0
+    const averagePercent = gradedCount && quizMaxScore > 0
+      ? (averageScore / quizMaxScore) * 100
+      : 0
+    const passCount = gradedAttempts.filter((attempt) => attempt.passed).length
+    const passRate = gradedCount ? (passCount / gradedCount) * 100 : 0
+
+    const buckets = [0, 0, 0, 0, 0]
+    const bucketLabels = ['0-49%', '50-64%', '65-79%', '80-89%', '90-100%']
+
+    gradedAttempts.forEach((attempt) => {
+      const percent = attempt.maxScore
+        ? Math.round((attempt.totalScore / attempt.maxScore) * 100)
+        : 0
+      if (percent < 50) buckets[0] += 1
+      else if (percent < 65) buckets[1] += 1
+      else if (percent < 80) buckets[2] += 1
+      else if (percent < 90) buckets[3] += 1
+      else buckets[4] += 1
+    })
+
+    res.render('quiz/analytics', {
+      quiz,
+      totalAttempts,
+      gradedCount,
+      averageScore,
+      averagePercent,
+      passCount,
+      passRate,
+      quizMaxScore,
+      bucketLabels,
+      bucketCounts: buckets
+    })
+  } catch (err) {
+    res.redirect('/quiz/my-quizzes')
+  }
+})
+
 router.get('/browse', requireAuth, requireRole(['student']), async (req, res) => {
   try {
     const { subject, msg } = req.query

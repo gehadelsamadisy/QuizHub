@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Profile - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container">
+
+    <h1>My Profile</h1>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        Profile updated successfully!
+      </div>
+    <% } %>
+
+    <p><strong>Name:</strong> <%= user.name %></p>
+
+    <p><strong>Email:</strong> <%= user.email %></p>
+
+    <p><strong>Role:</strong> <%= user.role %></p>
+
+    <a href="/user/profile/edit" class="btn">
+      Edit Profile
+    </a>
+
+  </div>
+
+</body>
+</html>

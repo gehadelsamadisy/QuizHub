@@ -30,16 +30,18 @@ app.use((req, res, next) => {
 const authRoutes = require('./routes/auth')
 const quizRoutes = require('./routes/quiz')
 const attemptRoutes = require('./routes/attempt')
+const userRoutes = require('./routes/user')
 
 app.use('/', authRoutes)
 app.use('/quiz', quizRoutes)
 app.use('/attempt', attemptRoutes)
+app.use('/user', userRoutes)
 
 app.get('/', (req, res) => {
   res.render('home')
 })
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
