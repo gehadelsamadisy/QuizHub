@@ -49,7 +49,11 @@
               <label>Score (0–<%= q.points %>)</label>
               <input type="number" name="scores[<%= q._id %>]" value="<%= ans.score != null ? ans.score : '' %>" min="0" max="<%= q.points %>" step="0.5">
             <% } else if (q.type === 'file_upload') { %>
-              <p class="muted">File upload — no file stored in this build.</p>
+              <% if (ans && ans.uploadedFile) { %>
+                <p><a href="<%= ans.uploadedFile %>" target="_blank" rel="noopener">View uploaded file</a></p>
+              <% } else { %>
+                <p class="muted">No file uploaded.</p>
+              <% } %>
               <label>Score (0–<%= q.points %>)</label>
               <input type="number" name="scores[<%= q._id %>]" value="<%= ans && ans.score != null ? ans.score : '' %>" min="0" max="<%= q.points %>" step="0.5">
             <% } %>
