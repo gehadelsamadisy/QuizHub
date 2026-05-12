@@ -3,10 +3,10 @@
 ## Cover Page
 
 - **Project Name:** Online Quiz & Exam System
-  <!-- - **Team Members:** Gehad Khaled Elsamadisy, [Member 2], [Member 3], [Member 4], [Member 5], [Member 6] -->
+  <!-- - **Team Members:** Gehad Khaled Elsamadisy, [Mahmoud Tarek], [Amr Khaled], [Ahmed elNaggar], [Aly Salem], [Adham elGowaily] -->
     <!-- - **Course Name:** Software Engineering -->
     <!-- - **Instructor Name:** [Instructor Name] -->
-    <!-- - **Submission Date:** [Date] -->
+    <!-- - **Submission Date:** [13 May 2026] -->
 
 ---
 
