@@ -88,8 +88,21 @@ async function recalculateAttemptFromAnswers(attempt, quiz) {
     max > 0 && (total / max) * 100 >= (quiz.passingScore || 0)
 }
 
-function canModifyQuiz(quiz) {
-  return quiz && ['draft', 'closed'].includes(quiz.status)
+async function quizHasAttempts(quizId) {
+  return (await Attempt.countDocuments({ quizId })) > 0
+}
+
+async function canModifyQuiz(quiz) {
+  if (!quiz || quiz.status === 'released' || quiz.status === 'published') {
+    return false
+  }
+  if (quiz.status === 'draft') {
+    return true
+  }
+  if (quiz.status === 'closed') {
+    return !(await quizHasAttempts(quiz._id))
+  }
+  return false
 }
 
 router.get('/create', requireAuth, requireRole(['teacher']), (req, res) => {
@@ -121,7 +134,17 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
 router.get('/my-quizzes', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quizzes = await Quiz.find({ createdBy: req.user.id })
-    res.render('quiz/my-quizzes', { quizzes, msg: req.query.msg || null })
+    const quizzesWithAttemptCounts = await Promise.all(
+      quizzes.map(async (quiz) => {
+        const attemptCount = await Attempt.countDocuments({ quizId: quiz._id })
+        return {
+          ...quiz.toObject(),
+          attemptCount,
+          hasAttempts: attemptCount > 0
+        }
+      })
+    )
+    res.render('quiz/my-quizzes', { quizzes: quizzesWithAttemptCounts, msg: req.query.msg || null })
   } catch (err) {
     res.render('quiz/my-quizzes', { quizzes: [], msg: null })
   }
@@ -209,7 +232,7 @@ router.get('/browse', requireAuth, requireRole(['student']), async (req, res) =>
 router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     res.render('quiz/edit', { quiz, error: null })
@@ -221,7 +244,7 @@ router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, r
 router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const { title, description, subject, timeLimit, passingScore, maxAttemptsPerStudent } =
@@ -414,7 +437,7 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const question = await Question.findOne({
@@ -443,7 +466,7 @@ router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['tea
 router.post('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const question = await Question.findOne({
@@ -584,7 +607,14 @@ router.get('/:id/view', requireAuth, requireRole(['teacher']), async (req, res) 
       return res.redirect('/quiz/my-quizzes')
     }
     const questions = await Question.find({ quizId: quiz._id }).sort({ _id: 1 })
-    res.render('quiz/view', { quiz, questions })
+    const attemptCount = await Attempt.countDocuments({ quizId: quiz._id })
+    res.render('quiz/view', {
+      quiz,
+      questions,
+      attemptCount,
+      hasAttempts: attemptCount > 0,
+      canModifyQuiz: await canModifyQuiz(quiz)
+    })
   } catch (err) {
     res.redirect('/quiz/my-quizzes')
   }
@@ -597,7 +627,7 @@ router.get('/:id/edit', requireAuth, requireRole(['teacher']), (req, res) => {
 router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     res.render('quiz/add-questions', { quiz, error: null })
@@ -609,7 +639,7 @@ router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (r
 router.post('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
 

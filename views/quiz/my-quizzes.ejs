@@ -41,20 +41,24 @@
                 </form>
               <% } %>
               <% if (quiz.status === 'closed') { %>
-                <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
+                <% if (!quiz.hasAttempts) { %>
+                  <a href="/quiz/<%= quiz._id %>/add-questions" class="btn">Add Questions</a>
+                <% } %>
                 <form method="POST" action="/quiz/<%= quiz._id %>/reopen" style="display:inline;" onsubmit="return confirm('Make this quiz available to students again? It will appear in Browse and new attempts can start (within attempt limits).');">
                   <button type="submit" class="btn-reopen">Make available again</button>
                 </form>
-                <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Delete this quiz and all saved attempts permanently?');">
-                  <button type="submit" class="btn-delete-all">Delete</button>
-                </form>
+                <% if (!quiz.hasAttempts) { %>
+                  <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Delete this quiz permanently?');">
+                    <button type="submit" class="btn-delete-all">Delete</button>
+                  </form>
+                <% } %>
               <% } %>
               <% if (quiz.status === 'released') { %>
                 <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Delete this released quiz and all saved attempts permanently?');">
                   <button type="submit" class="btn-delete-all">Delete</button>
                 </form>
               <% } %>
-              <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
+              <% if (quiz.status === 'draft' || (quiz.status === 'closed' && !quiz.hasAttempts)) { %>
                 <a href="/quiz/settings/<%= quiz._id %>" class="btn btn-secondary">Edit settings</a>
               <% } %>
               <a href="/quiz/<%= quiz._id %>/analytics" class="btn btn-secondary">Analytics</a>
