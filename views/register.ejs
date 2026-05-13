@@ -25,14 +25,76 @@
       </div>
       <div>
         <label>Role:</label>
-        <select name="role">
+        <select name="role" id="role-select">
           <option value="student">Student</option>
           <option value="teacher">Teacher</option>
         </select>
+      </div>
+      <div id="student-fields" style="display: block;">
+        <div>
+          <label>Major:</label>
+          <select name="major" required>
+            <option value="mechanical-engineering">Mechanical Engineering</option>
+            <option value="computer-engineering">Computer Engineering</option>
+            <option value="mechatronics-engineering">Mechatronics Engineering</option>
+          </select>
+        </div>
+        <div>
+          <label>Registered Subjects:</label>
+          <select name="registeredSubjects" multiple required></select>
+          <small>Hold Ctrl (or Cmd) to select multiple subjects.</small>
+        </div>
       </div>
       <button type="submit">Register</button>
     </form>
     <p>Already have an account? <a href="/login">Login</a></p>
   </div>
+
+  <script>
+    const subjectsByMajor = <%- subjectsByMajor %>
+    const subjectLabels = <%- subjectLabels %>
+    const roleSelect = document.getElementById('role-select')
+    const studentFields = document.getElementById('student-fields')
+    const majorSelect = document.querySelector('select[name="major"]')
+    const subjectsSelect = document.querySelector('select[name="registeredSubjects"]')
+
+    function setSubjectOptions(major) {
+      const allowedSubjects = subjectsByMajor[major] || []
+      const existingSelections = Array.from(subjectsSelect.options)
+        .filter(option => option.selected)
+        .map(option => option.value)
+
+      subjectsSelect.innerHTML = ''
+      allowedSubjects.forEach((subjectValue) => {
+        const option = document.createElement('option')
+        option.value = subjectValue
+        option.textContent = subjectLabels[subjectValue] || subjectValue
+        if (existingSelections.includes(subjectValue)) {
+          option.selected = true
+        }
+        subjectsSelect.appendChild(option)
+      })
+    }
+
+    function updateStudentFields() {
+      if (roleSelect.value === 'student') {
+        studentFields.style.display = 'block'
+        majorSelect.required = true
+        subjectsSelect.required = true
+        setSubjectOptions(majorSelect.value)
+      } else {
+        studentFields.style.display = 'none'
+        majorSelect.required = false
+        subjectsSelect.required = false
+        majorSelect.value = ''
+        subjectsSelect.innerHTML = ''
+      }
+    }
+
+    roleSelect.addEventListener('change', updateStudentFields)
+    majorSelect.addEventListener('change', () => setSubjectOptions(majorSelect.value))
+
+    updateStudentFields()
+  </script>
 </body>
 </html>

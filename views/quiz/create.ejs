@@ -24,8 +24,16 @@
         <textarea name="description"></textarea>
       </div>
       <div>
+        <label>Major:</label>
+        <select name="major" id="major-select" required>
+          <option value="mechanical-engineering">Mechanical Engineering</option>
+          <option value="computer-engineering">Computer Engineering</option>
+          <option value="mechatronics-engineering">Mechatronics Engineering</option>
+        </select>
+      </div>
+      <div>
         <label>Subject:</label>
-        <input type="text" name="subject" required>
+        <select name="subject" id="subject-select" required></select>
       </div>
       <div>
         <label>Time Limit (minutes):</label>
@@ -47,5 +55,29 @@
     </form>
     <p class="hint">Cancel returns to My Quizzes without saving.</p>
   </div>
+
+  <script>
+    const subjectsByMajor = <%- subjectsByMajor %>
+    const subjectLabels = <%- subjectLabels %>
+    const majorSelect = document.getElementById('major-select')
+    const subjectSelect = document.getElementById('subject-select')
+
+    function populateSubjectOptions(major) {
+      const allowedSubjects = subjectsByMajor[major] || []
+      subjectSelect.innerHTML = ''
+      allowedSubjects.forEach((subjectValue) => {
+        const option = document.createElement('option')
+        option.value = subjectValue
+        option.textContent = subjectLabels[subjectValue] || subjectValue
+        subjectSelect.appendChild(option)
+      })
+    }
+
+    majorSelect.addEventListener('change', () => {
+      populateSubjectOptions(majorSelect.value)
+    })
+
+    populateSubjectOptions(majorSelect.value)
+  </script>
 </body>
 </html>

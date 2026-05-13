@@ -26,8 +26,28 @@
         <textarea name="description"><%= quiz.description || '' %></textarea>
       </div>
       <div>
+        <label>Major:</label>
+        <select name="major" required>
+          <option value="mechanical-engineering" <%= quiz.major === 'mechanical-engineering' ? 'selected' : '' %>>Mechanical Engineering</option>
+          <option value="computer-engineering" <%= quiz.major === 'computer-engineering' ? 'selected' : '' %>>Computer Engineering</option>
+          <option value="mechatronics-engineering" <%= quiz.major === 'mechatronics-engineering' ? 'selected' : '' %>>Mechatronics Engineering</option>
+        </select>
+      </div>
+      <div>
         <label>Subject:</label>
-        <input type="text" name="subject" required value="<%= quiz.subject %>">
+        <select name="subject" required>
+          <option value="algorithms" <%= quiz.subject === 'algorithms' ? 'selected' : '' %>>Algorithms</option>
+          <option value="data-structures" <%= quiz.subject === 'data-structures' ? 'selected' : '' %>>Data Structures</option>
+          <option value="databases" <%= quiz.subject === 'databases' ? 'selected' : '' %>>Databases</option>
+          <option value="operating-systems" <%= quiz.subject === 'operating-systems' ? 'selected' : '' %>>Operating Systems</option>
+          <option value="networks" <%= quiz.subject === 'networks' ? 'selected' : '' %>>Networks</option>
+          <option value="machine-learning" <%= quiz.subject === 'machine-learning' ? 'selected' : '' %>>Machine Learning</option>
+          <option value="embedded-systems" <%= quiz.subject === 'embedded-systems' ? 'selected' : '' %>>Embedded Systems</option>
+          <option value="control-systems" <%= quiz.subject === 'control-systems' ? 'selected' : '' %>>Control Systems</option>
+          <option value="thermodynamics" <%= quiz.subject === 'thermodynamics' ? 'selected' : '' %>>Thermodynamics</option>
+          <option value="fluid-mechanics" <%= quiz.subject === 'fluid-mechanics' ? 'selected' : '' %>>Fluid Mechanics</option>
+          <option value="web-development" <%= quiz.subject === 'web-development' ? 'selected' : '' %>>Web Development</option>
+        </select>
       </div>
       <div>
         <label>Time Limit (minutes):</label>

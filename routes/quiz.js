@@ -6,6 +6,7 @@ const Question = require('../models/question')
 const Attempt = require('../models/attempt')
 const Answer = require('../models/answer')
 const User = require('../models/user')
+const { SUBJECTS_BY_MAJOR, SUBJECT_LABELS, isSubjectValidForMajor } = require('../lib/subjectMapping')
 
 async function deleteQuizAndRelatedData(quizId) {
   const attempts = await Attempt.find({ quizId })
@@ -93,18 +94,32 @@ function canModifyQuiz(quiz) {
 }
 
 router.get('/create', requireAuth, requireRole(['teacher']), (req, res) => {
-  res.render('quiz/create', { error: null })
+  res.render('quiz/create', {
+    error: null,
+    subjectsByMajor: JSON.stringify(SUBJECTS_BY_MAJOR),
+    subjectLabels: JSON.stringify(SUBJECT_LABELS)
+  })
 })
 
 router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const { title, description, subject, timeLimit, passingScore, maxAttemptsPerStudent } = req.body
+    const { title, description, major, subject, timeLimit, passingScore, maxAttemptsPerStudent } = req.body
+
+    if (!major || !subject || !isSubjectValidForMajor(major, subject)) {
+      return res.render('quiz/create', {
+        error: 'Selected subject does not match the selected major.',
+        subjectsByMajor: JSON.stringify(SUBJECTS_BY_MAJOR),
+        subjectLabels: JSON.stringify(SUBJECT_LABELS)
+      })
+    }
+
     const attemptsRaw = parseInt(maxAttemptsPerStudent, 10)
     const attemptsAllowed =
       Number.isNaN(attemptsRaw) || attemptsRaw < 1 ? 1 : Math.min(50, attemptsRaw)
     const quiz = new Quiz({
       title,
       description,
+      major,
       subject,
       timeLimit: parseInt(timeLimit),
       passingScore: parseInt(passingScore),
@@ -114,7 +129,11 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
     await quiz.save()
     res.redirect('/quiz/my-quizzes')
   } catch (err) {
-    res.render('quiz/create', { error: 'Failed to create quiz' })
+    res.render('quiz/create', {
+      error: 'Failed to create quiz',
+      subjectsByMajor: JSON.stringify(SUBJECTS_BY_MAJOR),
+      subjectLabels: JSON.stringify(SUBJECT_LABELS)
+    })
   }
 })
 
@@ -195,13 +214,28 @@ router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, 
 router.get('/browse', requireAuth, requireRole(['student']), async (req, res) => {
   try {
     const { subject, msg } = req.query
-    const filter = { status: 'published' }
-    if (subject) filter.subject = subject
+    const filter = { status: 'published', major: req.user.major }
+    if (subject) {
+      filter.subject = subject
+    } else {
+      // If no subject filter, show quizzes where subject is in registeredSubjects
+      filter.subject = { $in: req.user.registeredSubjects }
+    }
 
     const quizzes = await Quiz.find(filter)
-    res.render('quiz/browse', { quizzes, subject: subject || '', msg: msg || null })
+    res.render('quiz/browse', {
+      quizzes,
+      subject: subject || '',
+      msg: msg || null,
+      registeredSubjects: req.user.registeredSubjects || []
+    })
   } catch (err) {
-    res.render('quiz/browse', { quizzes: [], subject: '', msg: null })
+    res.render('quiz/browse', {
+      quizzes: [],
+      subject: '',
+      msg: null,
+      registeredSubjects: req.user.registeredSubjects || []
+    })
   }
 })
 
@@ -224,7 +258,7 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
-    const { title, description, subject, timeLimit, passingScore, maxAttemptsPerStudent } =
+    const { title, description, major, subject, timeLimit, passingScore, maxAttemptsPerStudent } =
       req.body
     const titleTrim = String(title || '').trim()
     const subjectTrim = String(subject || '').trim()
@@ -242,6 +276,7 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
 
     quiz.title = titleTrim
     quiz.description = description != null ? String(description) : ''
+    quiz.major = major
     quiz.subject = subjectTrim
     quiz.timeLimit = Number.isNaN(timeRaw) || timeRaw < 1 ? quiz.timeLimit : timeRaw
     quiz.passingScore = Number.isNaN(passRaw)
@@ -506,6 +541,12 @@ router.get('/:id/take', requireAuth, requireRole(['student']), async (req, res) 
     const quiz = await Quiz.findById(req.params.id)
     if (!quiz || quiz.status !== 'published') {
       const msg = encodeURIComponent('That quiz is not available.')
+      return res.redirect(`/quiz/browse?msg=${msg}`)
+    }
+
+    // Check major and subject access
+    if (quiz.major !== req.user.major || !req.user.registeredSubjects.includes(quiz.subject)) {
+      const msg = encodeURIComponent('You do not have access to this quiz.')
       return res.redirect(`/quiz/browse?msg=${msg}`)
     }
 

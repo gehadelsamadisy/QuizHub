@@ -16,7 +16,14 @@
 
     <form method="GET" action="/quiz/browse" class="filter-form">
       <label>Filter by Subject:</label>
-      <input type="text" name="subject" value="<%= subject || '' %>">
+      <select name="subject">
+        <option value="">All Subjects</option>
+        <% (registeredSubjects || []).forEach(sub => { %>
+          <option value="<%= sub %>" <%= subject === sub ? 'selected' : '' %>>
+            <%= sub.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+          </option>
+        <% }) %>
+      </select>
       <button type="submit">Filter</button>
       <% if (subject) { %>
         <a href="/quiz/browse">Clear Filter</a>
@@ -31,7 +38,7 @@
           <div class="quiz-card">
             <h3><%= quiz.title %></h3>
             <p><%= quiz.description %></p>
-            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>% · Up to <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %> attempt(s)</p>
+            <p>Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> | Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>% · Up to <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %> attempt(s)</p>
             <a href="/quiz/<%= String(quiz._id) %>/take" class="btn">Start Quiz</a>
           </div>
         <% }) %>
