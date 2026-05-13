@@ -11,6 +11,10 @@
     <h1>My Quizzes</h1>
     <a href="/quiz/create" class="btn">Create New Quiz</a>
 
+    <% if (typeof msg !== 'undefined' && msg) { %>
+      <div class="notice"><%= msg %></div>
+    <% } %>
+
     <div class="quiz-list">
       <% if (quizzes.length === 0) { %>
         <p>No quizzes created yet.</p>
@@ -45,6 +49,11 @@
                   <button type="submit" class="btn-delete-all">Delete</button>
                 </form>
               <% } %>
+              <% if (quiz.status === 'released') { %>
+                <form method="POST" action="/quiz/<%= quiz._id %>/delete" style="display:inline;" onsubmit="return confirm('Delete this released quiz and all saved attempts permanently?');">
+                  <button type="submit" class="btn-delete-all">Delete</button>
+                </form>
+              <% } %>
               <% if (quiz.status === 'draft' || quiz.status === 'closed') { %>
                 <a href="/quiz/settings/<%= quiz._id %>" class="btn btn-secondary">Edit settings</a>
               <% } %>
@@ -68,6 +77,14 @@
   border: 1px solid #ddd;
 }
 
+.notice {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
 .status {
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -77,6 +94,7 @@
 .status.draft { background: #f39c12; color: white; }
 .status.published { background: #27ae60; color: white; }
 .status.closed { background: #e74c3c; color: white; }
+.status.released { background: #2c3e50; color: white; }
 
 .quiz-actions a, .quiz-actions button {
   margin-right: 0.5rem;

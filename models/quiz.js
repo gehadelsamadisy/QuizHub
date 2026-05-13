@@ -7,7 +7,8 @@ const quizSchema = new mongoose.Schema({
   timeLimit: { type: Number, required: true },
   passingScore: { type: Number, required: true },
   maxAttemptsPerStudent: { type: Number, default: 1, min: 1 },
-  status: { type: String, enum: ['draft', 'published', 'closed'], default: 'draft' },
+  status: { type: String, enum: ['draft', 'published', 'closed', 'released'], default: 'draft' },
+  gradesReleased: { type: Boolean, default: false },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 })

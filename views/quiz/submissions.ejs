@@ -14,6 +14,27 @@
     <% if (!attempts || attempts.length === 0) { %>
       <p>No submitted attempts yet.</p>
     <% } else { %>
+      <div class="release-panel">
+        <div>
+          <strong>Grades are <%= quiz.gradesReleased ? 'released' : 'not released' %> for this quiz.</strong>
+          <p>
+            <% if (quiz.gradesReleased) { %>
+              Students can see released scores and feedback for completed attempts.
+            <% } else { %>
+              Students will only see that their submission was received until grades are released.
+            <% } %>
+            <% if (pendingReviewCount > 0) { %>
+              <br><%= pendingReviewCount %> attempt(s) still need manual review before they can be released.
+            <% } %>
+          </p>
+        </div>
+        <form method="POST" action="/quiz/<%= quiz._id %>/release-grades" onsubmit="return confirm('Release available grades for this quiz to all students?');">
+          <button type="submit" class="btn" <%= releasableCount === 0 && quiz.gradesReleased ? 'disabled' : '' %>>
+            Release grades
+          </button>
+        </form>
+      </div>
+
       <table class="submissions-table">
         <thead>
           <tr>
@@ -48,6 +69,23 @@
   <style>
     .meta { color: #555; margin-bottom: 1rem; }
     .muted { color: #777; font-size: 0.85rem; }
+    .release-panel {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .release-panel p { margin: 0.35rem 0 0; color: #555; }
+    .release-panel form { flex-shrink: 0; }
+    .release-panel button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
     .submissions-table {
       width: 100%;
       border-collapse: collapse;
