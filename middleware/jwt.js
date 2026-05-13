@@ -23,8 +23,10 @@ const attachUser = async (req, res, next) => {
     req.user = getUserFromPayload({
       ...payload,
       role: user.role,
-      major: user.major || null,
-      registeredSubjects: Array.isArray(user.registeredSubjects) ? user.registeredSubjects : []
+      majorId: user.majorId ? user.majorId.toString() : null,
+      registeredSubjects: Array.isArray(user.registeredSubjects)
+        ? user.registeredSubjects.map((id) => id.toString())
+        : []
     })
   } catch {
     res.clearCookie(COOKIE_NAME, clearCookieOptions())

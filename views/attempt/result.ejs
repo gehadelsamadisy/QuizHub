@@ -9,7 +9,7 @@
 
   <div class="container">
     <h1><%= quiz.title %></h1>
-    <p class="meta">Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %></p>
+    <p class="meta">Major: <%= quiz.majorId && quiz.majorId.name ? quiz.majorId.name : '—' %> · Subject: <%= quiz.subjectId && quiz.subjectId.name ? quiz.subjectId.name : '—' %></p>
 
     <% if (typeof resultsLocked !== 'undefined' && resultsLocked) { %>
       <div class="banner locked">

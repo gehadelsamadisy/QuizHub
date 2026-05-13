@@ -79,7 +79,14 @@ router.get('/history', requireAuth, requireRole(['student']), async (req, res) =
   try {
     const attempts = await Attempt.find({ studentId: req.user.id })
       .sort({ submittedAt: -1 })
-      .populate('quizId', 'title subject passingScore')
+      .populate({
+        path: 'quizId',
+        select: 'title majorId subjectId passingScore',
+        populate: [
+          { path: 'majorId', select: 'name' },
+          { path: 'subjectId', select: 'name' }
+        ]
+      })
     res.render('attempt/history', { attempts })
   } catch (err) {
     res.render('attempt/history', { attempts: [] })
@@ -94,6 +101,8 @@ router.get('/:attemptId', requireAuth, requireRole(['student']), async (req, res
     }
 
     const quiz = await Quiz.findById(attempt.quizId)
+      .populate('majorId', 'name')
+      .populate('subjectId', 'name')
     if (!quiz) {
       return res.redirect('/quiz/browse')
     }
@@ -143,6 +152,8 @@ router.post('/:attemptId/submit', requireAuth, requireRole(['student']), handleF
     }
 
     const quiz = await Quiz.findById(attempt.quizId)
+      .populate('majorId', 'name')
+      .populate('subjectId', 'name')
     if (!quiz || quiz.status !== 'published') {
       return res.redirect('/quiz/browse')
     }

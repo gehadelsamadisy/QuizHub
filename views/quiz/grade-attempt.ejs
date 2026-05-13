@@ -10,7 +10,7 @@
   <div class="container">
     <h1>Grade attempt</h1>
     <p class="meta"><strong><%= quiz.title %></strong><br>
-      Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %><br>
+      Major: <%= quiz.majorId && quiz.majorId.name ? quiz.majorId.name : '—' %> · Subject: <%= quiz.subjectId && quiz.subjectId.name ? quiz.subjectId.name : '—' %><br>
       Student: <%= student ? student.name : '—' %>
       <% if (student && student.email) { %> · <%= student.email %><% } %><br>
       Submitted: <%= attempt.submittedAt ? attempt.submittedAt.toLocaleString() : '—' %>

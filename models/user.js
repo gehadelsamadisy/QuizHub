@@ -6,12 +6,13 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['student', 'teacher', 'admin'], default: 'student' },
-  major: {
-    type: String,
+  majorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Major',
     required: function() { return this.role === 'student' }
   },
   registeredSubjects: {
-    type: [{ type: String }],
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }],
     default: []
   },
   isActive: { type: Boolean, default: true },

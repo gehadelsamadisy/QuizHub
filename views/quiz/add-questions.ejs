@@ -9,7 +9,7 @@
 
   <div class="container">
     <h1>Add Questions to: <%= quiz.title %></h1>
-    <p>Status: <%= quiz.status %> | Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> | Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %></p>
+    <p>Status: <%= quiz.status %> | Major: <%= quiz.majorId && quiz.majorId.name ? quiz.majorId.name : '—' %> | Subject: <%= quiz.subjectId && quiz.subjectId.name ? quiz.subjectId.name : '—' %></p>
 
     <% if (typeof error !== 'undefined' && error) { %>
       <div class="error"><%= error %></div>

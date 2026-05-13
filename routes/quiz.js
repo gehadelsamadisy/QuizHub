@@ -6,9 +6,10 @@ const Question = require('../models/question')
 const Attempt = require('../models/attempt')
 const Answer = require('../models/answer')
 const User = require('../models/user')
+const Subject = require('../models/subject')
 const {
   getMajors,
-  getSubjectsForForms,
+  getSubjects,
   isValidMajor,
   validateSubjectsForMajor
 } = require('../lib/academicData')
@@ -111,31 +112,43 @@ async function canModifyQuiz(quiz) {
   return false
 }
 
+function quizAcademicPopulate(query) {
+  return query.populate('majorId', 'name').populate('subjectId', 'name')
+}
+
+function findQuizWithAcademics(id) {
+  return quizAcademicPopulate(Quiz.findById(id))
+}
+
+function findQuizzesWithAcademics(filter) {
+  return quizAcademicPopulate(Quiz.find(filter))
+}
+
 router.get('/create', requireAuth, requireRole(['teacher']), async (req, res) => {
   const majors = await getMajors()
-  const subjects = await getSubjectsForForms()
+  const subjects = await getSubjects()
   res.render('quiz/create', {
     error: null,
     majors,
     subjects,
-    selectedMajor: majors.length ? majors[0].slug : '',
-    selectedSubject: ''
+    selectedMajorId: majors.length ? String(majors[0]._id) : '',
+    selectedSubjectId: ''
   })
 })
 
 router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const { title, description, major, subject, timeLimit, passingScore, maxAttemptsPerStudent } = req.body
+    const { title, description, majorId, subjectId, timeLimit, passingScore, maxAttemptsPerStudent } = req.body
 
-    if (!major || !subject || !await validateSubjectsForMajor(major, [subject])) {
+    if (!majorId || !subjectId || !await validateSubjectsForMajor(majorId, [subjectId])) {
       const majors = await getMajors()
-      const subjects = await getSubjectsForForms()
+      const subjects = await getSubjects()
       return res.render('quiz/create', {
         error: 'Selected subject does not match the selected major.',
         majors,
         subjects,
-        selectedMajor: major || (majors.length ? majors[0].slug : ''),
-        selectedSubject: subject || ''
+        selectedMajorId: majorId || (majors.length ? String(majors[0]._id) : ''),
+        selectedSubjectId: subjectId || ''
       })
     }
 
@@ -145,8 +158,8 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
     const quiz = new Quiz({
       title,
       description,
-      major,
-      subject,
+      majorId,
+      subjectId,
       timeLimit: parseInt(timeLimit),
       passingScore: parseInt(passingScore),
       maxAttemptsPerStudent: attemptsAllowed,
@@ -156,20 +169,20 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
     res.redirect('/quiz/my-quizzes')
   } catch (err) {
     const majors = await getMajors()
-    const subjects = await getSubjectsForForms()
+    const subjects = await getSubjects()
     res.render('quiz/create', {
       error: 'Failed to create quiz',
       majors,
       subjects,
-      selectedMajor: req.body.major || (majors.length ? majors[0].slug : ''),
-      selectedSubject: req.body.subject || ''
+      selectedMajorId: req.body.majorId || (majors.length ? String(majors[0]._id) : ''),
+      selectedSubjectId: req.body.subjectId || ''
     })
   }
 })
 
 router.get('/my-quizzes', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quizzes = await Quiz.find({ createdBy: req.user.id })
+    const quizzes = await findQuizzesWithAcademics({ createdBy: req.user.id })
     const quizzesWithAttemptCounts = await Promise.all(
       quizzes.map(async (quiz) => {
         const attemptCount = await Attempt.countDocuments({ quizId: quiz._id })
@@ -188,7 +201,7 @@ router.get('/my-quizzes', requireAuth, requireRole(['teacher']), async (req, res
 
 router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -253,26 +266,33 @@ router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, 
 
 router.get('/browse', requireAuth, requireRole(['student']), async (req, res) => {
   try {
-    const { subject, msg } = req.query
-    const filter = { status: 'published', gradesReleased: { $ne: true }, major: req.user.major }
-    if (subject) {
-      filter.subject = subject
-    } else {
-      filter.subject = { $in: req.user.registeredSubjects }
+    const { subjectId, msg } = req.query
+    const filter = {
+      status: 'published',
+      gradesReleased: { $ne: true },
+      majorId: req.user.majorId
     }
-    const quizzes = await Quiz.find(filter)
+    if (subjectId) {
+      filter.subjectId = subjectId
+    } else {
+      filter.subjectId = { $in: req.user.registeredSubjects }
+    }
+    const quizzes = await findQuizzesWithAcademics(filter)
+    const registeredSubjects = await Subject.find({ _id: { $in: req.user.registeredSubjects || [] } })
+      .sort('name')
+      .lean()
     res.render('quiz/browse', {
       quizzes,
-      subject: subject || '',
+      subjectId: subjectId || '',
       msg: msg || null,
-      registeredSubjects: req.user.registeredSubjects || []
+      registeredSubjects
     })
   } catch (err) {
     res.render('quiz/browse', {
       quizzes: [],
-      subject: '',
+      subjectId: '',
       msg: null,
-      registeredSubjects: req.user.registeredSubjects || []
+      registeredSubjects: []
     })
   }
 })
@@ -280,13 +300,20 @@ router.get('/browse', requireAuth, requireRole(['student']), async (req, res) =>
 // Literal /settings/ prefix so this always matches (before generic /:id/... routes).
 router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const majors = await getMajors()
-    const subjects = await getSubjectsForForms()
-    res.render('quiz/edit', { quiz, error: null, majors, subjects })
+    const subjects = await getSubjects()
+    res.render('quiz/edit', {
+      quiz,
+      error: null,
+      majors,
+      subjects,
+      selectedMajorId: quiz.majorId ? String(quiz.majorId._id || quiz.majorId) : '',
+      selectedSubjectId: quiz.subjectId ? String(quiz.subjectId._id || quiz.subjectId) : ''
+    })
   } catch (err) {
     res.redirect('/quiz/my-quizzes')
   }
@@ -294,33 +321,37 @@ router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, r
 
 router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
-    const { title, description, major, subject, timeLimit, passingScore, maxAttemptsPerStudent } =
+    const { title, description, majorId, subjectId, timeLimit, passingScore, maxAttemptsPerStudent } =
       req.body
     const titleTrim = String(title || '').trim()
-    const subjectTrim = String(subject || '').trim()
+    const subjectTrim = String(subjectId || '').trim()
     if (!titleTrim || !subjectTrim) {
       const majors = await getMajors()
-      const subjects = await getSubjectsForForms()
+      const subjects = await getSubjects()
       return res.render('quiz/edit', {
         quiz,
         error: 'Title and subject are required.',
         majors,
-        subjects
+        subjects,
+        selectedMajorId: majorId || (quiz.majorId ? String(quiz.majorId._id || quiz.majorId) : ''),
+        selectedSubjectId: subjectId || (quiz.subjectId ? String(quiz.subjectId._id || quiz.subjectId) : '')
       })
     }
 
-    if (!major || !subjectTrim || !await validateSubjectsForMajor(major, [subjectTrim])) {
+    if (!majorId || !subjectTrim || !await validateSubjectsForMajor(majorId, [subjectTrim])) {
       const majors = await getMajors()
-      const subjects = await getSubjectsForForms()
+      const subjects = await getSubjects()
       return res.render('quiz/edit', {
         quiz,
         error: 'Selected subject does not match the selected major.',
         majors,
-        subjects
+        subjects,
+        selectedMajorId: majorId || (quiz.majorId ? String(quiz.majorId._id || quiz.majorId) : ''),
+        selectedSubjectId: subjectId || (quiz.subjectId ? String(quiz.subjectId._id || quiz.subjectId) : '')
       })
     }
 
@@ -332,8 +363,8 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
 
     quiz.title = titleTrim
     quiz.description = description != null ? String(description) : ''
-    quiz.major = major
-    quiz.subject = subjectTrim
+    quiz.majorId = majorId
+    quiz.subjectId = subjectTrim
     quiz.timeLimit = Number.isNaN(timeRaw) || timeRaw < 1 ? quiz.timeLimit : timeRaw
     quiz.passingScore = Number.isNaN(passRaw)
       ? quiz.passingScore
@@ -353,11 +384,18 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
 
     res.redirect(`/quiz/${quiz._id}/view`)
   } catch (err) {
-    const quiz = await Quiz.findById(req.params.id).catch(() => null)
+    const quiz = await findQuizWithAcademics(req.params.id).catch(() => null)
     if (quiz) {
       const majors = await getMajors()
-      const subjects = await getSubjectsForForms()
-      res.render('quiz/edit', { quiz, error: 'Failed to save quiz settings.', majors, subjects })
+      const subjects = await getSubjects()
+      res.render('quiz/edit', {
+        quiz,
+        error: 'Failed to save quiz settings.',
+        majors,
+        subjects,
+        selectedMajorId: quiz.majorId ? String(quiz.majorId._id || quiz.majorId) : '',
+        selectedSubjectId: quiz.subjectId ? String(quiz.subjectId._id || quiz.subjectId) : ''
+      })
     } else {
       res.redirect('/quiz/my-quizzes')
     }
@@ -366,7 +404,7 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
 
 router.get('/:id/submissions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -398,7 +436,7 @@ router.get('/:id/submissions', requireAuth, requireRole(['teacher']), async (req
 
 router.post('/:id/release-grades', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -424,7 +462,7 @@ router.post('/:id/release-grades', requireAuth, requireRole(['teacher']), async 
 
 router.get('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -456,7 +494,7 @@ router.get('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher']),
 
 router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -506,7 +544,7 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 
 router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.quizId)
+    const quiz = await findQuizWithAcademics(req.params.quizId)
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -535,7 +573,7 @@ router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['tea
 
 router.post('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.quizId)
+    const quiz = await findQuizWithAcademics(req.params.quizId)
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -593,7 +631,7 @@ router.post('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['te
     await question.save()
     res.redirect(`/quiz/${quiz._id}/view`)
   } catch (err) {
-    const quiz = await Quiz.findById(req.params.quizId).catch(() => null)
+    const quiz = await findQuizWithAcademics(req.params.quizId).catch(() => null)
     if (quiz) {
       const question = await Question.findById(req.params.questionId).catch(() => null)
       if (question) {
@@ -616,7 +654,7 @@ router.post('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['te
 
 router.get('/:id/take', requireAuth, requireRole(['student']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.status !== 'published') {
       const msg = encodeURIComponent('That quiz is not available.')
       return res.redirect(`/quiz/browse?msg=${msg}`)
@@ -627,7 +665,11 @@ router.get('/:id/take', requireAuth, requireRole(['student']), async (req, res) 
     }
 
     // Check major and subject access
-    if (quiz.major !== req.user.major || !req.user.registeredSubjects.includes(quiz.subject)) {
+    const userMajorId = req.user.majorId ? String(req.user.majorId) : ''
+    const quizMajorId = String(quiz.majorId?._id || quiz.majorId || '')
+    const quizSubjectId = String(quiz.subjectId?._id || quiz.subjectId || '')
+    const registeredSubjectIds = (req.user.registeredSubjects || []).map((id) => String(id))
+    if (quizMajorId !== userMajorId || !registeredSubjectIds.includes(quizSubjectId)) {
       const msg = encodeURIComponent('You do not have access to this quiz.')
       return res.redirect(`/quiz/browse?msg=${msg}`)
     }
@@ -678,7 +720,7 @@ router.get('/:id/take', requireAuth, requireRole(['student']), async (req, res) 
 
 router.get('/:id/view', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -702,7 +744,7 @@ router.get('/:id/edit', requireAuth, requireRole(['teacher']), (req, res) => {
 
 router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -714,7 +756,7 @@ router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (r
 
 router.post('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -752,7 +794,7 @@ router.post('/:id/add-questions', requireAuth, requireRole(['teacher']), async (
 
     res.redirect('/quiz/my-quizzes')
   } catch (err) {
-    const quiz = await Quiz.findById(req.params.id).catch(() => null)
+    const quiz = await findQuizWithAcademics(req.params.id).catch(() => null)
     if (quiz) {
       res.render('quiz/add-questions', { quiz, error: 'Failed to add questions' })
     } else {
@@ -763,7 +805,7 @@ router.post('/:id/add-questions', requireAuth, requireRole(['teacher']), async (
 
 router.post('/:id/close', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (quiz && quiz.createdBy.toString() === req.user.id && quiz.status === 'published') {
       quiz.status = 'closed'
       await quiz.save()
@@ -776,7 +818,7 @@ router.post('/:id/close', requireAuth, requireRole(['teacher']), async (req, res
 
 router.post('/:id/reopen', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (quiz && quiz.createdBy.toString() === req.user.id && quiz.status === 'closed') {
       quiz.status = 'published'
       await quiz.save()
@@ -789,7 +831,7 @@ router.post('/:id/reopen', requireAuth, requireRole(['teacher']), async (req, re
 
 router.post('/:id/delete', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
@@ -814,7 +856,7 @@ router.post('/:id/delete', requireAuth, requireRole(['teacher']), async (req, re
 
 router.post('/:id/publish', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const quiz = await findQuizWithAcademics(req.params.id)
     if (quiz && quiz.createdBy.toString() === req.user.id && quiz.status === 'draft') {
       quiz.status = 'published'
       await quiz.save()

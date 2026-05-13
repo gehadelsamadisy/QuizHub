@@ -27,9 +27,9 @@
       </div>
       <div>
         <label>Major:</label>
-        <select name="major" id="major-select" required>
+        <select name="majorId" id="major-select" required>
           <% majors.forEach((major) => { %>
-            <option value="<%= major.slug %>" <%= major.slug === quiz.major ? 'selected' : '' %>><%= major.name %></option>
+            <option value="<%= major._id %>" <%= String(major._id) === String(selectedMajorId || '') ? 'selected' : '' %>><%= major.name %></option>
           <% }) %>
         </select>
       </div>
@@ -60,19 +60,19 @@
   <script>
     const majors = <%- JSON.stringify(majors) %>
     const subjects = <%- JSON.stringify(subjects) %>
-    const quizMajor = '<%= quiz.major %>'
-    const quizSubject = '<%= quiz.subject %>'
+    const selectedMajorId = '<%= selectedMajorId || '' %>'
+    const selectedSubjectId = '<%= selectedSubjectId || '' %>'
     const majorSelect = document.getElementById('major-select')
     const subjectSelect = document.getElementById('subject-select')
 
-    function populateSubjectOptions(majorSlug) {
-      const allowedSubjects = subjects.filter((subject) => subject.majorSlug === majorSlug)
+    function populateSubjectOptions(majorId) {
+      const allowedSubjects = subjects.filter((subject) => String(subject.majorId) === String(majorId))
       subjectSelect.innerHTML = ''
       allowedSubjects.forEach((subject) => {
         const option = document.createElement('option')
-        option.value = subject.slug
+        option.value = subject._id
         option.textContent = subject.name
-        if (subject.slug === quizSubject) {
+        if (String(subject._id) === String(selectedSubjectId)) {
           option.selected = true
         }
         subjectSelect.appendChild(option)
@@ -83,8 +83,8 @@
       populateSubjectOptions(majorSelect.value)
     })
 
-    if (quizMajor) {
-      majorSelect.value = quizMajor
+    if (selectedMajorId) {
+      majorSelect.value = selectedMajorId
     }
     populateSubjectOptions(majorSelect.value)
   </script>

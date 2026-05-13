@@ -9,7 +9,7 @@
 
   <div class="container">
     <h1>Student submissions</h1>
-    <p class="meta"><%= quiz.title %> · Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %></p>
+    <p class="meta"><%= quiz.title %> · Major: <%= quiz.majorId && quiz.majorId.name ? quiz.majorId.name : '—' %> · Subject: <%= quiz.subjectId && quiz.subjectId.name ? quiz.subjectId.name : '—' %></p>
 
     <% if (!attempts || attempts.length === 0) { %>
       <p>No submitted attempts yet.</p>

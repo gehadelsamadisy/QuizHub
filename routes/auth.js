@@ -5,20 +5,20 @@ const bcrypt = require('bcrypt')
 const { COOKIE_NAME, signUserToken, cookieOptions, clearCookieOptions } = require('../lib/jwt')
 const {
   getMajors,
-  getSubjectsForForms,
+  getSubjects,
   validateSubjectsForMajor,
   isValidMajor
 } = require('../lib/academicData')
 
 async function renderRegisterPage(res, options = {}) {
   const majors = await getMajors()
-  const subjects = await getSubjectsForForms()
+  const subjects = await getSubjects()
   res.render('register', {
     majors,
     subjects,
     error: null,
     role: 'student',
-    selectedMajor: '',
+    selectedMajorId: '',
     selectedSubjects: [],
     ...options
   })
@@ -30,7 +30,7 @@ router.get('/register', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, major, registeredSubjects } = req.body
+    const { name, email, password, role, majorId, registeredSubjects } = req.body
     if (!['student', 'teacher'].includes(role)) {
       throw new Error('Invalid role selected.')
     }
@@ -42,21 +42,21 @@ router.post('/register', async (req, res) => {
         ? registeredSubjects
         : [registeredSubjects].filter(Boolean)
 
-      if (!major || subjectArray.length === 0) {
-        throw new Error('Student registration requires major and at least one subject.')
+      if (!majorId || subjectArray.length === 0) {
+        throw new Error('Student registration requires a major and at least one subject.')
       }
 
-      const majorExists = await isValidMajor(major)
+      const majorExists = await isValidMajor(majorId)
       if (!majorExists) {
         throw new Error('Selected major is invalid.')
       }
 
-      const validSubjects = await validateSubjectsForMajor(major, subjectArray)
+      const validSubjects = await validateSubjectsForMajor(majorId, subjectArray)
       if (!validSubjects) {
         throw new Error('Selected subjects do not match the chosen major.')
       }
 
-      userData.major = major
+      userData.majorId = majorId
       userData.registeredSubjects = subjectArray
     } else {
       userData.registeredSubjects = []
@@ -69,7 +69,7 @@ router.post('/register', async (req, res) => {
     if (err.code === 11000) {
       await renderRegisterPage(res, {
         error: 'Email already exists',
-        selectedMajor: req.body.major || '',
+        selectedMajorId: req.body.majorId || '',
         selectedSubjects: Array.isArray(req.body.registeredSubjects)
           ? req.body.registeredSubjects
           : [req.body.registeredSubjects].filter(Boolean)
@@ -77,7 +77,7 @@ router.post('/register', async (req, res) => {
     } else {
       await renderRegisterPage(res, {
         error: 'Registration failed: ' + err.message,
-        selectedMajor: req.body.major || '',
+        selectedMajorId: req.body.majorId || '',
         selectedSubjects: Array.isArray(req.body.registeredSubjects)
           ? req.body.registeredSubjects
           : [req.body.registeredSubjects].filter(Boolean)

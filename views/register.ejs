@@ -33,9 +33,9 @@
       <div id="student-fields" style="display: block;">
         <div>
           <label>Major:</label>
-          <select name="major" id="major-select" required>
+          <select name="majorId" id="major-select" required>
             <% majors.forEach((major) => { %>
-              <option value="<%= major.slug %>" <%= major.slug === selectedMajor ? 'selected' : '' %>><%= major.name %></option>
+              <option value="<%= major._id %>" <%= String(major._id) === String(selectedMajorId || '') ? 'selected' : '' %>><%= major.name %></option>
             <% }) %>
           </select>
         </div>
@@ -53,7 +53,7 @@
   <script>
     const majors = <%- JSON.stringify(majors) %>
     const subjects = <%- JSON.stringify(subjects) %>
-    const selectedMajor = '<%= selectedMajor || '' %>'
+    const selectedMajorId = '<%= selectedMajorId || '' %>'
     const selectedSubjects = <%- JSON.stringify(selectedSubjects || []) %>
     const role = '<%= typeof role !== 'undefined' ? role : 'student' %>'
 
@@ -62,14 +62,14 @@
     const majorSelect = document.getElementById('major-select')
     const subjectsSelect = document.getElementById('registeredSubjects')
 
-    function buildSubjectOptions(majorSlug) {
-      const allowedSubjects = subjects.filter((subject) => subject.majorSlug === majorSlug)
+    function buildSubjectOptions(majorId) {
+      const allowedSubjects = subjects.filter((subject) => String(subject.majorId) === String(majorId))
       subjectsSelect.innerHTML = ''
       allowedSubjects.forEach((subject) => {
         const option = document.createElement('option')
-        option.value = subject.slug
+        option.value = subject._id
         option.textContent = subject.name
-        if (selectedSubjects.includes(subject.slug)) {
+        if (selectedSubjects.map(String).includes(String(subject._id))) {
           option.selected = true
         }
         subjectsSelect.appendChild(option)
@@ -90,8 +90,8 @@
       }
     }
 
-    if (selectedMajor) {
-      majorSelect.value = selectedMajor
+    if (selectedMajorId) {
+      majorSelect.value = selectedMajorId
     }
 
     roleSelect.addEventListener('change', updateStudentFields)

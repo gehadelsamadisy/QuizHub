@@ -10,7 +10,7 @@
   <div class="container">
     <h1><%= quiz.title %></h1>
     <p><%= quiz.description || '' %></p>
-    <p class="meta">Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Time: <%= quiz.timeLimit %> min · Passing: <%= quiz.passingScore %>% · Attempts per student: <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %> · Status: <%= quiz.status %></p>
+    <p class="meta">Major: <%= quiz.majorId && quiz.majorId.name ? quiz.majorId.name : '—' %> · Subject: <%= quiz.subjectId && quiz.subjectId.name ? quiz.subjectId.name : '—' %> · Time: <%= quiz.timeLimit %> min · Passing: <%= quiz.passingScore %>% · Attempts per student: <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %> · Status: <%= quiz.status %></p>
 
     <h2>Questions (<%= questions.length %>)</h2>
     <% if (questions.length === 0) { %>

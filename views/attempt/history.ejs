@@ -28,8 +28,8 @@
           <% attempts.forEach(function (a) {
             const quiz = a.quizId
             const title = quiz && quiz.title ? quiz.title : 'Quiz'
-            const major = quiz && quiz.major ? quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '—'
-            const subj = quiz && quiz.subject ? quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '—'
+            const major = quiz && quiz.majorId && quiz.majorId.name ? quiz.majorId.name : '—'
+            const subj = quiz && quiz.subjectId && quiz.subjectId.name ? quiz.subjectId.name : '—'
           %>
             <tr>
               <td><%= title %></td>
