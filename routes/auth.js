@@ -31,6 +31,9 @@ router.get('/register', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role, major, registeredSubjects } = req.body
+    if (!['student', 'teacher'].includes(role)) {
+      throw new Error('Invalid role selected.')
+    }
     const hashedPassword = await bcrypt.hash(password, 10)
     const userData = { name, email, password: hashedPassword, role }
 

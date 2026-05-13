@@ -205,6 +205,72 @@ button:hover, .btn:hover {
   color: #333;
 }
 
+.admin-page .meta {
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+.admin-section {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-section h2 {
+  margin-bottom: 1rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e3e3e3;
+  vertical-align: top;
+}
+
+.admin-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.inline-form {
+  display: inline-block;
+  margin: 0;
+}
+
+.stack-form {
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.muted {
+  color: #666;
+  font-size: 0.9rem;
+}
+
 .dashboard {
   background-color: white;
   padding: 2rem;

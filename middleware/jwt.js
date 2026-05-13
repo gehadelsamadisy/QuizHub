@@ -4,8 +4,9 @@ const {
   getUserFromPayload,
   clearCookieOptions
 } = require('../lib/jwt')
+const User = require('../models/user')
 
-const attachUser = (req, res, next) => {
+const attachUser = async (req, res, next) => {
   const token = req.cookies[COOKIE_NAME]
   if (!token) {
     req.user = null
@@ -13,7 +14,18 @@ const attachUser = (req, res, next) => {
   }
   try {
     const payload = verifyUserToken(token)
-    req.user = getUserFromPayload(payload)
+    const user = await User.findById(payload.sub).lean()
+    if (!user || user.isActive === false) {
+      res.clearCookie(COOKIE_NAME, clearCookieOptions())
+      req.user = null
+      return next()
+    }
+    req.user = getUserFromPayload({
+      ...payload,
+      role: user.role,
+      major: user.major || null,
+      registeredSubjects: Array.isArray(user.registeredSubjects) ? user.registeredSubjects : []
+    })
   } catch {
     res.clearCookie(COOKIE_NAME, clearCookieOptions())
     req.user = null

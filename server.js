@@ -31,11 +31,13 @@ const authRoutes = require('./routes/auth')
 const quizRoutes = require('./routes/quiz')
 const attemptRoutes = require('./routes/attempt')
 const userRoutes = require('./routes/user')
+const adminRoutes = require('./routes/admin')
 
 app.use('/', authRoutes)
 app.use('/quiz', quizRoutes)
 app.use('/attempt', attemptRoutes)
 app.use('/user', userRoutes)
+app.use('/admin', adminRoutes)
 
 app.get('/', (req, res) => {
   res.render('home')

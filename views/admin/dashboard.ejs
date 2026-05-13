@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - QuizHub</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('../partials/navbar') %>
+
+  <% const majorMap = Object.fromEntries((majors || []).map((major) => [major.slug, major.name])) %>
+
+  <div class="container admin-page">
+    <h1>Admin Panel</h1>
+    <p class="meta">Manage users, quizzes, majors, and subjects from one place.</p>
+
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+    <% if (success) { %>
+      <div class="alert alert-success"><%= success %></div>
+    <% } %>
+
+    <section class="admin-section">
+      <h2>Platform Stats</h2>
+      <div class="admin-grid">
+        <div class="summary-card">
+          <h3>Total Users</h3>
+          <p><strong><%= stats.totalUsers %></strong></p>
+        </div>
+        <div class="summary-card">
+          <h3>Total Quizzes</h3>
+          <p><strong><%= stats.totalQuizzes %></strong></p>
+        </div>
+        <div class="summary-card">
+          <h3>Total Attempts</h3>
+          <p><strong><%= stats.totalAttempts %></strong></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <h2>Registered Users</h2>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Major</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach((user) => { %>
+              <tr>
+                <td><%= user.name %></td>
+                <td><%= user.email %></td>
+                <td><%= user.role %></td>
+                <td><%= user.major ? (majorMap[user.major] || user.major) : '—' %></td>
+                <td><%= user.isActive ? 'Active' : 'Inactive' %></td>
+                <td>
+                  <% if (String(user._id) === String(currentUserId)) { %>
+                    <span class="muted">Current account</span>
+                  <% } else { %>
+                    <form method="POST" action="/admin/users/<%= user._id %>/status" class="inline-form">
+                      <input type="hidden" name="nextState" value="<%= user.isActive ? 'false' : 'true' %>">
+                      <button type="submit" class="btn <%= user.isActive ? 'btn-secondary' : '' %>">
+                        <%= user.isActive ? 'Deactivate' : 'Activate' %>
+                      </button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <h2>All Quizzes</h2>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Major</th>
+              <th>Subject</th>
+              <th>Status</th>
+              <th>Created By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% quizzes.forEach((quiz) => { %>
+              <tr>
+                <td><%= quiz.title %></td>
+                <td><%= quiz.major ? (majorMap[quiz.major] || quiz.major) : '—' %></td>
+                <td><%= quiz.subject %></td>
+                <td><%= quiz.status %></td>
+                <td><%= quiz.createdBy && quiz.createdBy.name ? quiz.createdBy.name : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <h2>Majors</h2>
+      <form method="POST" action="/admin/majors" class="stack-form">
+        <div class="form-row">
+          <div>
+            <label>Major Name</label>
+            <input type="text" name="name" required>
+          </div>
+          <div>
+            <label>Slug</label>
+            <input type="text" name="slug" placeholder="Optional">
+          </div>
+        </div>
+        <button type="submit">Add Major</button>
+      </form>
+
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Slug</th>
+              <th>Subjects</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% majors.forEach((major) => { %>
+              <tr>
+                <td><%= major.name %></td>
+                <td><%= major.slug %></td>
+                <td><%= major.subjectCount %></td>
+                <td>
+                  <form method="POST" action="/admin/majors/<%= major.slug %>/delete" class="inline-form">
+                    <button type="submit" class="btn btn-secondary">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <h2>Subjects</h2>
+      <form method="POST" action="/admin/subjects" class="stack-form">
+        <div class="form-row">
+          <div>
+            <label>Subject Name</label>
+            <input type="text" name="name" required>
+          </div>
+          <div>
+            <label>Slug</label>
+            <input type="text" name="slug" placeholder="Optional">
+          </div>
+          <div>
+            <label>Major</label>
+            <select name="majorSlug" required>
+              <option value="">Select major</option>
+              <% majors.forEach((major) => { %>
+                <option value="<%= major.slug %>"><%= major.name %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <button type="submit">Add Subject</button>
+      </form>
+
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Slug</th>
+              <th>Major</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% subjects.forEach((subject) => { %>
+              <tr>
+                <td><%= subject.name %></td>
+                <td><%= subject.slug %></td>
+                <td><%= majorMap[subject.majorSlug] || subject.majorSlug %></td>
+                <td>
+                  <form method="POST" action="/admin/subjects/<%= subject.majorSlug %>/<%= subject.slug %>/delete" class="inline-form">
+                    <button type="submit" class="btn btn-secondary">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

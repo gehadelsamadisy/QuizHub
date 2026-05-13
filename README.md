@@ -126,6 +126,8 @@ The system will **not** include:
 | FR-41 | The system shall allow admins to activate or deactivate user accounts.                                       |
 | FR-42 | The system shall allow admins to view all quizzes across the platform.                                       |
 | FR-43 | The system shall allow admins to view platform-wide statistics (total users, total quizzes, total attempts). |
+| FR-44 | The system shall allow admins to add or remove majors from the platform.                                     |
+| FR-45 | The system shall allow admins to add or remove subjects related to majors from the platform.                 |
 
 ### 1.4 Non-Functional Requirements
 
