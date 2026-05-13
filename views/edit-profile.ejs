@@ -38,6 +38,43 @@
         >
       </div>
 
+      <% if (user.role === 'student') { %>
+        <div>
+          <label>Major:</label>
+          <p style="padding: 0.5rem; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+            <%= user.majorId && user.majorId.name ? user.majorId.name : 'N/A' %>
+          </p>
+          <p style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">Cannot be changed</p>
+        </div>
+
+        <div>
+          <label>Registered Subjects:</label>
+          <% if (availableSubjects && availableSubjects.length > 0) { %>
+            <div style="margin-top: 0.5rem; padding: 0.75rem; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+              <% availableSubjects.forEach(subject => {
+                const isRegistered = user.registeredSubjects && 
+                  user.registeredSubjects.some(s => s._id.toString() === subject._id.toString())
+              %>
+                <div style="margin-bottom: 0.5rem;">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input 
+                      type="checkbox" 
+                      name="registeredSubjects" 
+                      value="<%= subject._id %>"
+                      <% if (isRegistered) { %>checked<% } %>
+                      style="margin-right: 0.5rem;"
+                    >
+                    <%= subject.name %>
+                  </label>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p style="color: #666;">No subjects available for your major.</p>
+          <% } %>
+        </div>
+      <% } %>
+
       <button type="submit">
         Save Changes
       </button>

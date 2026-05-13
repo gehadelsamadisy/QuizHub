@@ -23,6 +23,21 @@
 
     <p><strong>Role:</strong> <%= user.role %></p>
 
+    <% if (user.role === 'student') { %>
+      <p><strong>Major:</strong> <%= user.majorId && user.majorId.name ? user.majorId.name : 'N/A' %></p>
+
+      <p><strong>Registered Subjects:</strong></p>
+      <% if (user.registeredSubjects && user.registeredSubjects.length > 0) { %>
+        <ul>
+          <% user.registeredSubjects.forEach(subject => { %>
+            <li><%= subject.name %></li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p>No subjects registered.</p>
+      <% } %>
+    <% } %>
+
     <a href="/user/profile/edit" class="btn">
       Edit Profile
     </a>
