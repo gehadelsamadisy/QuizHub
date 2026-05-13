@@ -9,7 +9,7 @@
 
   <div class="container">
     <h1>Edit question</h1>
-    <p class="quiz-ref"><%= quiz.title %> · Status: <%= quiz.status %></p>
+    <p class="quiz-ref"><%= quiz.title %> · Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Status: <%= quiz.status %></p>
 
     <% if (typeof error !== 'undefined' && error) { %>
       <div class="error"><%= error %></div>

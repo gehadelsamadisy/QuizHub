@@ -23,7 +23,7 @@
           <div class="quiz-card">
             <h3><%= quiz.title %></h3>
             <p><%= quiz.description %></p>
-            <p>Subject: <%= quiz.subject %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>% | Attempts per student: <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %></p>
+            <p>Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> | Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> | Time: <%= quiz.timeLimit %> min | Passing: <%= quiz.passingScore %>% | Attempts per student: <%= Math.max(1, quiz.maxAttemptsPerStudent || 1) %></p>
             <p>Status: <span class="status <%= quiz.status %>"><%= quiz.status %></span></p>
             <div class="quiz-actions">
               <% if (quiz.status === 'draft') { %>

@@ -9,7 +9,7 @@
 
   <div class="container take-quiz">
     <h1><%= quiz.title %></h1>
-    <p class="meta">Time limit: <%= quiz.timeLimit %> min · Passing: <%= quiz.passingScore %>%</p>
+    <p class="meta">Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Time limit: <%= quiz.timeLimit %> min · Passing: <%= quiz.passingScore %>%</p>
 
     <% if (error) { %>
       <div class="error"><%= error %></div>

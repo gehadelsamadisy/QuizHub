@@ -3,23 +3,82 @@ const router = express.Router()
 const User = require('../models/user')
 const bcrypt = require('bcrypt')
 const { COOKIE_NAME, signUserToken, cookieOptions, clearCookieOptions } = require('../lib/jwt')
+const {
+  getMajors,
+  getSubjectsForForms,
+  validateSubjectsForMajor,
+  isValidMajor
+} = require('../lib/academicData')
 
-router.get('/register', (req, res) => {
-  res.render('register', { error: null })
+async function renderRegisterPage(res, options = {}) {
+  const majors = await getMajors()
+  const subjects = await getSubjectsForForms()
+  res.render('register', {
+    majors,
+    subjects,
+    error: null,
+    role: 'student',
+    selectedMajor: '',
+    selectedSubjects: [],
+    ...options
+  })
+}
+
+router.get('/register', async (req, res) => {
+  await renderRegisterPage(res)
 })
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body
+    const { name, email, password, role, major, registeredSubjects } = req.body
     const hashedPassword = await bcrypt.hash(password, 10)
-    const user = new User({ name, email, password: hashedPassword, role })
+    const userData = { name, email, password: hashedPassword, role }
+
+    if (role === 'student') {
+      const subjectArray = Array.isArray(registeredSubjects)
+        ? registeredSubjects
+        : [registeredSubjects].filter(Boolean)
+
+      if (!major || subjectArray.length === 0) {
+        throw new Error('Student registration requires major and at least one subject.')
+      }
+
+      const majorExists = await isValidMajor(major)
+      if (!majorExists) {
+        throw new Error('Selected major is invalid.')
+      }
+
+      const validSubjects = await validateSubjectsForMajor(major, subjectArray)
+      if (!validSubjects) {
+        throw new Error('Selected subjects do not match the chosen major.')
+      }
+
+      userData.major = major
+      userData.registeredSubjects = subjectArray
+    } else {
+      userData.registeredSubjects = []
+    }
+
+    const user = new User(userData)
     await user.save()
     res.redirect('/login')
   } catch (err) {
     if (err.code === 11000) {
-      res.render('register', { error: 'Email already exists' })
+      await renderRegisterPage(res, {
+        error: 'Email already exists',
+        selectedMajor: req.body.major || '',
+        selectedSubjects: Array.isArray(req.body.registeredSubjects)
+          ? req.body.registeredSubjects
+          : [req.body.registeredSubjects].filter(Boolean)
+      })
     } else {
-      res.render('register', { error: 'Registration failed: ' + err.message })
+      await renderRegisterPage(res, {
+        error: 'Registration failed: ' + err.message,
+        selectedMajor: req.body.major || '',
+        selectedSubjects: Array.isArray(req.body.registeredSubjects)
+          ? req.body.registeredSubjects
+          : [req.body.registeredSubjects].filter(Boolean)
+      })
     }
   }
 })

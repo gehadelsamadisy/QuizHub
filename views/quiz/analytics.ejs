@@ -9,7 +9,7 @@
 
   <div class="container">
     <h1>Quiz Analytics</h1>
-    <p class="meta">Quiz: <strong><%= quiz.title %></strong> · Subject: <%= quiz.subject %> · Passing Score: <%= quiz.passingScore %>%</p>
+    <p class="meta">Quiz: <strong><%= quiz.title %></strong> · Major: <%= quiz.major.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Subject: <%= quiz.subject.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) %> · Passing Score: <%= quiz.passingScore %>%</p>
 
     <div class="analytics-summary">
       <div class="summary-card">

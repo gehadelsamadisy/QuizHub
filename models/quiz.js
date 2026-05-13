@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const quizSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
+  major: { type: String, required: true },
   subject: { type: String, required: true },
   timeLimit: { type: Number, required: true },
   passingScore: { type: Number, required: true },

@@ -26,8 +26,16 @@
         <textarea name="description"><%= quiz.description || '' %></textarea>
       </div>
       <div>
+        <label>Major:</label>
+        <select name="major" id="major-select" required>
+          <% majors.forEach((major) => { %>
+            <option value="<%= major.slug %>" <%= major.slug === quiz.major ? 'selected' : '' %>><%= major.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
         <label>Subject:</label>
-        <input type="text" name="subject" required value="<%= quiz.subject %>">
+        <select name="subject" id="subject-select" required></select>
       </div>
       <div>
         <label>Time Limit (minutes):</label>
@@ -48,5 +56,37 @@
       </div>
     </form>
   </div>
+
+  <script>
+    const majors = <%- JSON.stringify(majors) %>
+    const subjects = <%- JSON.stringify(subjects) %>
+    const quizMajor = '<%= quiz.major %>'
+    const quizSubject = '<%= quiz.subject %>'
+    const majorSelect = document.getElementById('major-select')
+    const subjectSelect = document.getElementById('subject-select')
+
+    function populateSubjectOptions(majorSlug) {
+      const allowedSubjects = subjects.filter((subject) => subject.majorSlug === majorSlug)
+      subjectSelect.innerHTML = ''
+      allowedSubjects.forEach((subject) => {
+        const option = document.createElement('option')
+        option.value = subject.slug
+        option.textContent = subject.name
+        if (subject.slug === quizSubject) {
+          option.selected = true
+        }
+        subjectSelect.appendChild(option)
+      })
+    }
+
+    majorSelect.addEventListener('change', () => {
+      populateSubjectOptions(majorSelect.value)
+    })
+
+    if (quizMajor) {
+      majorSelect.value = quizMajor
+    }
+    populateSubjectOptions(majorSelect.value)
+  </script>
 </body>
 </html>

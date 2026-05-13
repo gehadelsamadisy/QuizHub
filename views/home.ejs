@@ -4,35 +4,84 @@
   <title>QuizHub - Online Quiz & Exam System</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
+
   <%- include('partials/navbar') %>
 
-  <div class="container">
-    <h1>Welcome to QuizHub</h1>
-    <p>Online Quiz & Exam System</p>
+  <div class="home-page">
 
-    <% if (!user) { %>
-      <div class="cta">
-        <a href="/register" class="btn">Get Started</a>
-        <a href="/login" class="btn btn-secondary">Login</a>
-      </div>
-    <% } else { %>
-      <div class="dashboard">
-        <% if (user.role === 'student') { %>
-          <h2>Student Dashboard</h2>
-          <p>Take quizzes, view your results, and track your progress.</p>
-          <a href="/quiz/browse" class="btn">Browse Available Quizzes</a>
-        <% } else if (user.role === 'teacher') { %>
-          <h2>Teacher Dashboard</h2>
-          <p>Create quizzes, grade submissions, and view analytics.</p>
-          <a href="/quiz/create" class="btn">Create New Quiz</a>
-        <% } else if (user.role === 'admin') { %>
-          <h2>Admin Dashboard</h2>
-          <p>Manage users, view all quizzes, and monitor platform statistics.</p>
-          <a href="/admin/users" class="btn">Manage Users</a>
-        <% } %>
-      </div>
-    <% } %>
+    <div class="hero">
+
+      <h1>Welcome to QuizHub</h1>
+
+      <p class="subtitle">
+        Online Quiz & Exam System
+      </p>
+
+      <% if (!user) { %>
+
+        <div class="cta">
+
+          <a href="/register" class="btn">
+            Get Started
+          </a>
+
+          <a href="/login" class="btn btn-secondary">
+            Login
+          </a>
+
+        </div>
+
+      <% } else { %>
+
+        <div class="dashboard-card">
+
+          <% if (user.role === 'student') { %>
+
+            <h2>Student Dashboard</h2>
+
+            <p>
+              Take quizzes, view your results, and track your progress.
+            </p>
+
+            <a href="/quiz/browse" class="btn">
+              Browse Available Quizzes
+            </a>
+
+          <% } else if (user.role === 'teacher') { %>
+
+            <h2>Teacher Dashboard</h2>
+
+            <p>
+              Create quizzes, grade submissions, and view analytics.
+            </p>
+
+            <a href="/quiz/create" class="btn">
+              Create New Quiz
+            </a>
+
+          <% } else if (user.role === 'admin') { %>
+
+            <h2>Admin Dashboard</h2>
+
+            <p>
+              Manage users, view all quizzes, and monitor platform statistics.
+            </p>
+
+            <a href="/admin/users" class="btn">
+              Manage Users
+            </a>
+
+          <% } %>
+
+        </div>
+
+      <% } %>
+
+    </div>
+
   </div>
+
 </body>
 </html>
