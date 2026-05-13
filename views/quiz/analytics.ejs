@@ -20,12 +20,12 @@
       <div class="summary-card">
         <h3>Pass Rate</h3>
         <p><strong><%= passRate.toFixed(1) %> %</strong></p>
-        <p><%= passCount %> of <%= gradedCount %> graded attempts</p>
+        <p><%= passCount %> of <%= gradedCount %> students passed</p>
       </div>
       <div class="summary-card">
-        <h3>Total Attempts</h3>
-        <p><strong><%= totalAttempts %></strong></p>
-        <p><%= gradedCount %> graded, <%= totalAttempts - gradedCount %> pending review</p>
+        <h3>Students & Attempts</h3>
+        <p><strong><%= totalStudents %></strong> students</p>
+        <p><%= totalAttempts %> total attempts submitted</p>
       </div>
     </div>
 
@@ -34,6 +34,9 @@
         No student attempts have been submitted for this quiz yet.
       </div>
     <% } else { %>
+      <div class="info-notice">
+        <p><small><em>Note: Analytics are calculated using each student's best attempt. Multiple attempts per student do not affect these statistics.</em></small></p>
+      </div>
       <div class="chart-panel">
         <canvas id="scoreDistChart"></canvas>
       </div>

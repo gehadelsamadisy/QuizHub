@@ -99,6 +99,39 @@ async function quizHasAttempts(quizId) {
   return (await Attempt.countDocuments({ quizId })) > 0
 }
 
+// Helper function to get best attempt per student for analytics
+// Groups attempts by student and selects the best attempt for each (highest score, latest if tied)
+function getBestAttemptsPerStudent(attempts) {
+  // Group attempts by student ID
+  const studentAttempts = new Map()
+  
+  for (const attempt of attempts) {
+    const studentIdStr = attempt.studentId.toString()
+    if (!studentAttempts.has(studentIdStr)) {
+      studentAttempts.set(studentIdStr, [])
+    }
+    studentAttempts.get(studentIdStr).push(attempt)
+  }
+  
+  // For each student, select the best attempt
+  const bestAttempts = []
+  for (const studentId of studentAttempts.keys()) {
+    const studentAttemptsArray = studentAttempts.get(studentId)
+    
+    // Sort by: highest score first (descending), then latest submitted (descending if tied)
+    const sorted = studentAttemptsArray.sort((a, b) => {
+      const scoreDiff = b.totalScore - a.totalScore
+      if (scoreDiff !== 0) return scoreDiff // Higher score first
+      // If scores are equal, prefer latest submission
+      return new Date(b.submittedAt) - new Date(a.submittedAt)
+    })
+    
+    bestAttempts.push(sorted[0])
+  }
+  
+  return bestAttempts
+}
+
 async function canModifyQuiz(quiz) {
   if (!quiz || quiz.status === 'released' || quiz.status === 'published') {
     return false
@@ -211,13 +244,20 @@ router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, 
       submittedAt: { $exists: true, $ne: null }
     })
 
+    // Filter for graded attempts (exclude pending-review and in-progress)
     const gradedAttempts = attempts.filter(
-      (attempt) => attempt.gradingStatus !== 'pending-review'
+      (attempt) => attempt.gradingStatus !== 'pending-review' && attempt.gradingStatus !== 'in-progress'
     )
 
+    // Get best attempt per student for analytics calculations
+    const bestAttemptsPerStudent = getBestAttemptsPerStudent(gradedAttempts)
+
     const totalAttempts = attempts.length
-    const gradedCount = gradedAttempts.length
-    const totalScore = gradedAttempts.reduce(
+    const totalStudents = gradedAttempts.length > 0
+      ? new Set(gradedAttempts.map(a => a.studentId.toString())).size
+      : 0
+    const gradedCount = bestAttemptsPerStudent.length
+    const totalScore = bestAttemptsPerStudent.reduce(
       (sum, attempt) => sum + (attempt.totalScore || 0),
       0
     )
@@ -230,13 +270,13 @@ router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, 
     const averagePercent = gradedCount && quizMaxScore > 0
       ? (averageScore / quizMaxScore) * 100
       : 0
-    const passCount = gradedAttempts.filter((attempt) => attempt.passed).length
+    const passCount = bestAttemptsPerStudent.filter((attempt) => attempt.passed).length
     const passRate = gradedCount ? (passCount / gradedCount) * 100 : 0
 
     const buckets = [0, 0, 0, 0, 0]
     const bucketLabels = ['0-49%', '50-64%', '65-79%', '80-89%', '90-100%']
 
-    gradedAttempts.forEach((attempt) => {
+    bestAttemptsPerStudent.forEach((attempt) => {
       const percent = attempt.maxScore
         ? Math.round((attempt.totalScore / attempt.maxScore) * 100)
         : 0
@@ -250,6 +290,7 @@ router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, 
     res.render('quiz/analytics', {
       quiz,
       totalAttempts,
+      totalStudents,
       gradedCount,
       averageScore,
       averagePercent,
