@@ -94,8 +94,21 @@ async function recalculateAttemptFromAnswers(attempt, quiz) {
     max > 0 && (total / max) * 100 >= (quiz.passingScore || 0)
 }
 
-function canModifyQuiz(quiz) {
-  return quiz && ['draft', 'closed'].includes(quiz.status)
+async function quizHasAttempts(quizId) {
+  return (await Attempt.countDocuments({ quizId })) > 0
+}
+
+async function canModifyQuiz(quiz) {
+  if (!quiz || quiz.status === 'released' || quiz.status === 'published') {
+    return false
+  }
+  if (quiz.status === 'draft') {
+    return true
+  }
+  if (quiz.status === 'closed') {
+    return !(await quizHasAttempts(quiz._id))
+  }
+  return false
 }
 
 router.get('/create', requireAuth, requireRole(['teacher']), async (req, res) => {
@@ -157,9 +170,19 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
 router.get('/my-quizzes', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quizzes = await Quiz.find({ createdBy: req.user.id })
-    res.render('quiz/my-quizzes', { quizzes })
+    const quizzesWithAttemptCounts = await Promise.all(
+      quizzes.map(async (quiz) => {
+        const attemptCount = await Attempt.countDocuments({ quizId: quiz._id })
+        return {
+          ...quiz.toObject(),
+          attemptCount,
+          hasAttempts: attemptCount > 0
+        }
+      })
+    )
+    res.render('quiz/my-quizzes', { quizzes: quizzesWithAttemptCounts, msg: req.query.msg || null })
   } catch (err) {
-    res.render('quiz/my-quizzes', { quizzes: [] })
+    res.render('quiz/my-quizzes', { quizzes: [], msg: null })
   }
 })
 
@@ -231,14 +254,12 @@ router.get('/:id/analytics', requireAuth, requireRole(['teacher']), async (req, 
 router.get('/browse', requireAuth, requireRole(['student']), async (req, res) => {
   try {
     const { subject, msg } = req.query
-    const filter = { status: 'published', major: req.user.major }
+    const filter = { status: 'published', gradesReleased: { $ne: true }, major: req.user.major }
     if (subject) {
       filter.subject = subject
     } else {
-      // If no subject filter, show quizzes where subject is in registeredSubjects
       filter.subject = { $in: req.user.registeredSubjects }
     }
-
     const quizzes = await Quiz.find(filter)
     res.render('quiz/browse', {
       quizzes,
@@ -260,7 +281,7 @@ router.get('/browse', requireAuth, requireRole(['student']), async (req, res) =>
 router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const majors = await getMajors()
@@ -274,7 +295,7 @@ router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, r
 router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const { title, description, major, subject, timeLimit, passingScore, maxAttemptsPerStudent } =
@@ -349,15 +370,55 @@ router.get('/:id/submissions', requireAuth, requireRole(['teacher']), async (req
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
+    if (quiz.status === 'released') {
+      return res.redirect(`/quiz/${quiz._id}/view`)
+    }
     const attempts = await Attempt.find({
       quizId: quiz._id,
       submittedAt: { $exists: true, $ne: null }
     })
       .sort({ submittedAt: -1 })
       .populate('studentId', 'name email')
-    res.render('quiz/submissions', { quiz, attempts })
+    const releasableCount = attempts.filter(
+      (att) => att.gradingStatus !== 'pending-review' && !att.gradesReleased
+    ).length
+    const pendingReviewCount = attempts.filter(
+      (att) => att.gradingStatus === 'pending-review'
+    ).length
+    res.render('quiz/submissions', {
+      quiz,
+      attempts,
+      releasableCount,
+      pendingReviewCount
+    })
   } catch (err) {
     res.redirect('/quiz/my-quizzes')
+  }
+})
+
+router.post('/:id/release-grades', requireAuth, requireRole(['teacher']), async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.id)
+    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
+      return res.redirect('/quiz/my-quizzes')
+    }
+
+    quiz.gradesReleased = true
+    quiz.status = 'released'
+    await quiz.save()
+
+    await Attempt.updateMany(
+      {
+        quizId: quiz._id,
+        submittedAt: { $exists: true, $ne: null },
+        gradingStatus: { $ne: 'pending-review' }
+      },
+      { $set: { gradesReleased: true } }
+    )
+
+    res.redirect(`/quiz/${quiz._id}/submissions`)
+  } catch (err) {
+    res.redirect(`/quiz/${req.params.id}/submissions`)
   }
 })
 
@@ -366,6 +427,9 @@ router.get('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher']),
     const quiz = await Quiz.findById(req.params.id)
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
+    }
+    if (quiz.status === 'released') {
+      return res.redirect(`/quiz/${quiz._id}/view`)
     }
     const attempt = await Attempt.findById(req.params.attemptId)
     if (!attempt || attempt.quizId.toString() !== quiz._id.toString()) {
@@ -396,6 +460,9 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
     if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
     }
+    if (quiz.status === 'released') {
+      return res.redirect(`/quiz/${quiz._id}/view`)
+    }
     const attempt = await Attempt.findById(req.params.attemptId)
     if (!attempt || attempt.quizId.toString() !== quiz._id.toString()) {
       return res.redirect(`/quiz/${quiz._id}/submissions`)
@@ -403,10 +470,6 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 
     const questions = await Question.find({ quizId: quiz._id }).sort({ _id: 1 })
     const scores = req.body.scores || {}
-    const wantsRelease =
-      req.body.releaseGrades === 'on' ||
-      req.body.releaseGrades === 'true' ||
-      req.body.releaseGrades === '1'
 
     const manualQuestions = questions.filter(
       (q) => q.type === 'written' || q.type === 'file_upload'
@@ -414,28 +477,6 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 
     if (manualQuestions.length === 0) {
       return res.redirect(`/quiz/${quiz._id}/submissions`)
-    }
-
-    if (wantsRelease && manualQuestions.length > 0) {
-      for (const q of manualQuestions) {
-        const raw = scores[q._id.toString()]
-        if (raw === undefined || raw === '' || Number.isNaN(parseFloat(raw))) {
-          const student = await User.findById(attempt.studentId).select('name email')
-          const answers = await Answer.find({ attemptId: attempt._id })
-          const answerMap = Object.fromEntries(
-            answers.map((a) => [a.questionId.toString(), a])
-          )
-          return res.render('quiz/grade-attempt', {
-            quiz,
-            attempt,
-            student,
-            questions,
-            answerMap,
-            error:
-              'Enter a numeric score for every written/file question before releasing grades.'
-          })
-        }
-      }
     }
 
     for (const q of manualQuestions) {
@@ -452,7 +493,7 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 
     await recalculateAttemptFromAnswers(attempt, quiz)
     attempt.gradingStatus = 'fully-graded'
-    if (wantsRelease) {
+    if (quiz.gradesReleased === true) {
       attempt.gradesReleased = true
     }
     await attempt.save()
@@ -466,7 +507,7 @@ router.post('/:id/submissions/:attemptId', requireAuth, requireRole(['teacher'])
 router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const question = await Question.findOne({
@@ -495,7 +536,7 @@ router.get('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['tea
 router.post('/:quizId/questions/:questionId/edit', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     const question = await Question.findOne({
@@ -580,6 +621,10 @@ router.get('/:id/take', requireAuth, requireRole(['student']), async (req, res) 
       const msg = encodeURIComponent('That quiz is not available.')
       return res.redirect(`/quiz/browse?msg=${msg}`)
     }
+    if (quiz.gradesReleased === true) {
+      const msg = encodeURIComponent('Grades have already been released for this quiz, so new attempts are closed.')
+      return res.redirect(`/quiz/browse?msg=${msg}`)
+    }
 
     // Check major and subject access
     if (quiz.major !== req.user.major || !req.user.registeredSubjects.includes(quiz.subject)) {
@@ -638,7 +683,14 @@ router.get('/:id/view', requireAuth, requireRole(['teacher']), async (req, res) 
       return res.redirect('/quiz/my-quizzes')
     }
     const questions = await Question.find({ quizId: quiz._id }).sort({ _id: 1 })
-    res.render('quiz/view', { quiz, questions })
+    const attemptCount = await Attempt.countDocuments({ quizId: quiz._id })
+    res.render('quiz/view', {
+      quiz,
+      questions,
+      attemptCount,
+      hasAttempts: attemptCount > 0,
+      canModifyQuiz: await canModifyQuiz(quiz)
+    })
   } catch (err) {
     res.redirect('/quiz/my-quizzes')
   }
@@ -651,7 +703,7 @@ router.get('/:id/edit', requireAuth, requireRole(['teacher']), (req, res) => {
 router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
     res.render('quiz/add-questions', { quiz, error: null })
@@ -663,7 +715,7 @@ router.get('/:id/add-questions', requireAuth, requireRole(['teacher']), async (r
 router.post('/:id/add-questions', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id || !(await canModifyQuiz(quiz))) {
       return res.redirect('/quiz/my-quizzes')
     }
 
@@ -738,8 +790,20 @@ router.post('/:id/reopen', requireAuth, requireRole(['teacher']), async (req, re
 router.post('/:id/delete', requireAuth, requireRole(['teacher']), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-    if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
+    if (!quiz || quiz.createdBy.toString() !== req.user.id) {
       return res.redirect('/quiz/my-quizzes')
+    }
+    const attemptCount = await Attempt.countDocuments({ quizId: quiz._id })
+    const hasAttempts = attemptCount > 0
+    const gradesAreReleased = quiz.status === 'released' || quiz.gradesReleased === true
+    const canDelete =
+      quiz.status === 'draft' ||
+      gradesAreReleased ||
+      (['published', 'closed'].includes(quiz.status) && !hasAttempts)
+
+    if (!canDelete) {
+      const msg = encodeURIComponent('Release scores before deleting a published or closed quiz with student attempts.')
+      return res.redirect(`/quiz/my-quizzes?msg=${msg}`)
     }
     await deleteQuizAndRelatedData(quiz._id)
     res.redirect('/quiz/my-quizzes')

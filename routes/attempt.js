@@ -97,6 +97,10 @@ router.get('/:attemptId', requireAuth, requireRole(['student']), async (req, res
     if (!quiz) {
       return res.redirect('/quiz/browse')
     }
+    if (!attempt.submittedAt && quiz.gradesReleased === true) {
+      const msg = encodeURIComponent('Grades have already been released for this quiz, so attempts are closed.')
+      return res.redirect(`/quiz/browse?msg=${msg}`)
+    }
 
     const questions = await Question.find({ quizId: quiz._id }).sort({ _id: 1 })
 
@@ -141,6 +145,10 @@ router.post('/:attemptId/submit', requireAuth, requireRole(['student']), handleF
     const quiz = await Quiz.findById(attempt.quizId)
     if (!quiz || quiz.status !== 'published') {
       return res.redirect('/quiz/browse')
+    }
+    if (quiz.gradesReleased === true) {
+      const msg = encodeURIComponent('Grades have already been released for this quiz, so your attempt can no longer be submitted.')
+      return res.redirect(`/quiz/browse?msg=${msg}`)
     }
 
     const questions = await Question.find({ quizId: quiz._id }).sort({ _id: 1 })
@@ -237,7 +245,7 @@ router.post('/:attemptId/submit', requireAuth, requireRole(['student']), handleF
     attempt.passed = passed
     attempt.submittedAt = new Date()
     attempt.gradingStatus = needsManualReview ? 'pending-review' : 'fully-graded'
-    attempt.gradesReleased = needsManualReview ? false : true
+    attempt.gradesReleased = !needsManualReview && quiz.gradesReleased === true
 
     await attempt.save()
 

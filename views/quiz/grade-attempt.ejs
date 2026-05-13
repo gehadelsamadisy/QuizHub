@@ -23,7 +23,10 @@
     <% const manualQs = questions.filter(function (q) { return q.type === 'written' || q.type === 'file_upload' }) %>
 
     <% if (manualQs.length === 0) { %>
-      <p>This quiz has only auto-graded questions. Students already see full results after they submit.</p>
+      <p>This quiz has only auto-graded questions. Students will see scores and correct answers after grades are released for this quiz.</p>
+      <form method="POST" action="/quiz/<%= quiz._id %>/release-grades" style="margin-bottom: 1rem;" onsubmit="return confirm('Release available grades for this quiz to all students?');">
+        <button type="submit" class="btn">Release grades</button>
+      </form>
       <p><a href="/quiz/<%= quiz._id %>/submissions" class="btn btn-secondary">Back to submissions</a></p>
     <% } else { %>
       <form method="POST" action="/quiz/<%= quiz._id %>/submissions/<%= attempt._id %>" class="grade-form">
@@ -54,13 +57,6 @@
           </div>
         <% }) %>
 
-        <div class="release-box">
-          <label class="chk">
-            <input type="checkbox" name="releaseGrades" value="1">
-            <strong>Release grades to student</strong> — they can then see scores, pass/fail, and question feedback (required scores above if checked).
-          </label>
-        </div>
-
         <button type="submit" class="btn">Save grades</button>
         <a href="/quiz/<%= quiz._id %>/submissions" class="btn btn-secondary">Cancel</a>
       </form>
@@ -88,15 +84,6 @@
       margin: 0.5rem 0 1rem;
     }
     .grade-form input[type="number"] { max-width: 8rem; }
-    .release-box {
-      background: #eaf4ff;
-      border: 1px solid #3498db;
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1.5rem 0;
-    }
-    .chk { display: flex; gap: 0.5rem; align-items: flex-start; cursor: pointer; }
-    .chk input { margin-top: 0.2rem; }
     .muted { color: #666; font-size: 0.9rem; }
   </style>
 </body>
