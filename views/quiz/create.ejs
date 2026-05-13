@@ -26,9 +26,9 @@
       <div>
         <label>Major:</label>
         <select name="major" id="major-select" required>
-          <option value="mechanical-engineering">Mechanical Engineering</option>
-          <option value="computer-engineering">Computer Engineering</option>
-          <option value="mechatronics-engineering">Mechatronics Engineering</option>
+          <% majors.forEach((major) => { %>
+            <option value="<%= major.slug %>" <%= major.slug === selectedMajor ? 'selected' : '' %>><%= major.name %></option>
+          <% }) %>
         </select>
       </div>
       <div>
@@ -57,18 +57,23 @@
   </div>
 
   <script>
-    const subjectsByMajor = <%- subjectsByMajor %>
-    const subjectLabels = <%- subjectLabels %>
+    const majors = <%- JSON.stringify(majors) %>
+    const subjects = <%- JSON.stringify(subjects) %>
+    const selectedMajor = '<%= selectedMajor %>'
+    const selectedSubject = '<%= selectedSubject %>'
     const majorSelect = document.getElementById('major-select')
     const subjectSelect = document.getElementById('subject-select')
 
-    function populateSubjectOptions(major) {
-      const allowedSubjects = subjectsByMajor[major] || []
+    function populateSubjectOptions(majorSlug) {
+      const allowedSubjects = subjects.filter((subject) => subject.majorSlug === majorSlug)
       subjectSelect.innerHTML = ''
-      allowedSubjects.forEach((subjectValue) => {
+      allowedSubjects.forEach((subject) => {
         const option = document.createElement('option')
-        option.value = subjectValue
-        option.textContent = subjectLabels[subjectValue] || subjectValue
+        option.value = subject.slug
+        option.textContent = subject.name
+        if (subject.slug === selectedSubject) {
+          option.selected = true
+        }
         subjectSelect.appendChild(option)
       })
     }
@@ -77,6 +82,9 @@
       populateSubjectOptions(majorSelect.value)
     })
 
+    if (selectedMajor) {
+      majorSelect.value = selectedMajor
+    }
     populateSubjectOptions(majorSelect.value)
   </script>
 </body>

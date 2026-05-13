@@ -6,7 +6,12 @@ const Question = require('../models/question')
 const Attempt = require('../models/attempt')
 const Answer = require('../models/answer')
 const User = require('../models/user')
-const { SUBJECTS_BY_MAJOR, SUBJECT_LABELS, isSubjectValidForMajor } = require('../lib/subjectMapping')
+const {
+  getMajors,
+  getSubjectsForForms,
+  isValidMajor,
+  validateSubjectsForMajor
+} = require('../lib/academicData')
 
 async function deleteQuizAndRelatedData(quizId) {
   const attempts = await Attempt.find({ quizId })
@@ -93,11 +98,15 @@ function canModifyQuiz(quiz) {
   return quiz && ['draft', 'closed'].includes(quiz.status)
 }
 
-router.get('/create', requireAuth, requireRole(['teacher']), (req, res) => {
+router.get('/create', requireAuth, requireRole(['teacher']), async (req, res) => {
+  const majors = await getMajors()
+  const subjects = await getSubjectsForForms()
   res.render('quiz/create', {
     error: null,
-    subjectsByMajor: JSON.stringify(SUBJECTS_BY_MAJOR),
-    subjectLabels: JSON.stringify(SUBJECT_LABELS)
+    majors,
+    subjects,
+    selectedMajor: majors.length ? majors[0].slug : '',
+    selectedSubject: ''
   })
 })
 
@@ -105,11 +114,15 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
   try {
     const { title, description, major, subject, timeLimit, passingScore, maxAttemptsPerStudent } = req.body
 
-    if (!major || !subject || !isSubjectValidForMajor(major, subject)) {
+    if (!major || !subject || !await validateSubjectsForMajor(major, [subject])) {
+      const majors = await getMajors()
+      const subjects = await getSubjectsForForms()
       return res.render('quiz/create', {
         error: 'Selected subject does not match the selected major.',
-        subjectsByMajor: JSON.stringify(SUBJECTS_BY_MAJOR),
-        subjectLabels: JSON.stringify(SUBJECT_LABELS)
+        majors,
+        subjects,
+        selectedMajor: major || (majors.length ? majors[0].slug : ''),
+        selectedSubject: subject || ''
       })
     }
 
@@ -129,10 +142,14 @@ router.post('/create', requireAuth, requireRole(['teacher']), async (req, res) =
     await quiz.save()
     res.redirect('/quiz/my-quizzes')
   } catch (err) {
+    const majors = await getMajors()
+    const subjects = await getSubjectsForForms()
     res.render('quiz/create', {
       error: 'Failed to create quiz',
-      subjectsByMajor: JSON.stringify(SUBJECTS_BY_MAJOR),
-      subjectLabels: JSON.stringify(SUBJECT_LABELS)
+      majors,
+      subjects,
+      selectedMajor: req.body.major || (majors.length ? majors[0].slug : ''),
+      selectedSubject: req.body.subject || ''
     })
   }
 })
@@ -246,7 +263,9 @@ router.get('/settings/:id', requireAuth, requireRole(['teacher']), async (req, r
     if (!quiz || quiz.createdBy.toString() !== req.user.id || !canModifyQuiz(quiz)) {
       return res.redirect('/quiz/my-quizzes')
     }
-    res.render('quiz/edit', { quiz, error: null })
+    const majors = await getMajors()
+    const subjects = await getSubjectsForForms()
+    res.render('quiz/edit', { quiz, error: null, majors, subjects })
   } catch (err) {
     res.redirect('/quiz/my-quizzes')
   }
@@ -263,11 +282,27 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
     const titleTrim = String(title || '').trim()
     const subjectTrim = String(subject || '').trim()
     if (!titleTrim || !subjectTrim) {
+      const majors = await getMajors()
+      const subjects = await getSubjectsForForms()
       return res.render('quiz/edit', {
         quiz,
-        error: 'Title and subject are required.'
+        error: 'Title and subject are required.',
+        majors,
+        subjects
       })
     }
+
+    if (!major || !subjectTrim || !await validateSubjectsForMajor(major, [subjectTrim])) {
+      const majors = await getMajors()
+      const subjects = await getSubjectsForForms()
+      return res.render('quiz/edit', {
+        quiz,
+        error: 'Selected subject does not match the selected major.',
+        majors,
+        subjects
+      })
+    }
+
     const attemptsRaw = parseInt(maxAttemptsPerStudent, 10)
     const attemptsAllowed =
       Number.isNaN(attemptsRaw) || attemptsRaw < 1 ? 1 : Math.min(50, attemptsRaw)
@@ -299,7 +334,9 @@ router.post('/settings/:id', requireAuth, requireRole(['teacher']), async (req, 
   } catch (err) {
     const quiz = await Quiz.findById(req.params.id).catch(() => null)
     if (quiz) {
-      res.render('quiz/edit', { quiz, error: 'Failed to save quiz settings.' })
+      const majors = await getMajors()
+      const subjects = await getSubjectsForForms()
+      res.render('quiz/edit', { quiz, error: 'Failed to save quiz settings.', majors, subjects })
     } else {
       res.redirect('/quiz/my-quizzes')
     }
